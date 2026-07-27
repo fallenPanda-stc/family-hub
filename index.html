@@ -1,0 +1,2284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Family Hub">
+  <meta name="theme-color" content="#F9F5EE">
+  <title>Family Hub - Shared Calendar & Budget</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%23A366CC' width='180' height='180'/><text x='50%' y='50%' font-size='90' font-weight='700' text-anchor='middle' dominant-baseline='central' font-family='system-ui' fill='white'>JY</text></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%23A366CC' width='180' height='180'/><text x='50%' y='50%' font-size='90' font-weight='700' text-anchor='middle' dominant-baseline='central' font-family='system-ui' fill='white'>JY</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; width: 100%; }
+    body {
+      margin: 0;
+      background: oklch(96% 0.02 70);
+      font-family: 'Nunito', sans-serif;
+      color: oklch(28% 0.03 50);
+      overflow: hidden;
+    }
+    #root { width: 100%; height: 100%; }
+    ::selection { background: oklch(92% 0.06 45); }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: oklch(88% 0.02 70); border-radius: 8px; }
+    input, select, textarea { font-family: 'Nunito', sans-serif; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes popIn { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .loading-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: oklch(96% 0.02 70);
+      gap: 20px;
+    }
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid oklch(88% 0.02 70);
+      border-top-color: oklch(64% 0.15 45);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div class="loading-screen">
+      <div class="loading-spinner"></div>
+      <p>Loading Family Hub...</p>
+    </div>
+  </div>
+
+  <!-- React & ReactDOM from CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js"></script>
+
+  <!-- Claude Design Runtime -->
+  <script>
+    // Load support.js inline
+    window.dcRuntime = true;
+  </script>
+
+  <!-- Main App Script -->
+  <script>
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyAG__3I_UfExpHiVAsf2ev9CY3flmmlnbQ",
+      authDomain: "haribo-82b77.firebaseapp.com",
+      projectId: "haribo-82b77",
+      storageBucket: "haribo-82b77.firebasestorage.app",
+      messagingSenderId: "437120438002",
+      appId: "1:437120438002:web:52c2746b6553fafbe24a6b"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // User state
+    let currentUser = null;
+    let userData = null;
+
+    // Listen to auth state
+    auth.onAuthStateChanged(async (user) => {
+      currentUser = user;
+      if (user) {
+        try {
+          const userDoc = await db.collection('users').doc(user.uid).get();
+          userData = userDoc.data() || { uid: user.uid, email: user.email, name: user.email.split('@')[0] };
+        } catch (err) {
+          console.error('Error loading user data:', err);
+        }
+      }
+      renderApp();
+    });
+
+    // Crypto utilities for passwords
+    const crypto = {
+      async encrypt(text, key) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(text);
+        const keyData = encoder.encode(key + currentUser?.uid);
+        const hashBuffer = await window.crypto.subtle.digest('SHA-256', keyData);
+        let encrypted = '';
+        for (let i = 0; i < data.length; i++) {
+          encrypted += String.fromCharCode(data[i] ^ new Uint8Array(hashBuffer)[i % 32]);
+        }
+        return btoa(encrypted);
+      },
+      async decrypt(encoded, key) {
+        try {
+          const encrypted = atob(encoded);
+          const encoder = new TextEncoder();
+          const keyData = encoder.encode(key + currentUser?.uid);
+          const hashBuffer = await window.crypto.subtle.digest('SHA-256', keyData);
+          let decrypted = '';
+          for (let i = 0; i < encrypted.length; i++) {
+            decrypted += String.fromCharCode(encrypted.charCodeAt(i) ^ new Uint8Array(hashBuffer)[i % 32]);
+          }
+          return decrypted;
+        } catch {
+          return '●●●●●●●●';
+        }
+      }
+    };
+
+    // App Component
+    const App = () => {
+      const { useState, useEffect, useRef } = React;
+      const [view, setView] = useState('dashboard');
+      const [modal, setModal] = useState(null);
+      const [events, setEvents] = useState([]);
+      const [transactions, setTransactions] = useState([]);
+      const [accounts, setAccounts] = useState([]);
+      const [categories, setCategories] = useState([
+        { id: 'food', name: 'Groceries', group: 'Expenses', budget: 800 },
+        { id: 'dining', name: 'Dining Out', group: 'Expenses', budget: 200 },
+        { id: 'gas', name: 'Gas', group: 'Expenses', budget: 300 },
+        { id: 'hydro', name: 'Hydro', group: 'Bills & Subscriptions', budget: 200 },
+        { id: 'internet', name: 'Internet', group: 'Bills & Subscriptions', budget: 100 },
+        { id: 'phone', name: 'Phone', group: 'Bills & Subscriptions', budget: 100 }
+      ]);
+      const [form, setForm] = useState({});
+      const [calMonth, setCalMonth] = useState(new Date().getMonth());
+      const [calYear, setCalYear] = useState(new Date().getFullYear());
+      const [budgetMonth, setBudgetMonth] = useState(new Date().getMonth());
+      const [budgetYear, setBudgetYear] = useState(new Date().getFullYear());
+
+      // Load data from Firestore
+      useEffect(() => {
+        if (!currentUser) return;
+        
+        // Load events
+        const unsubEvents = db.collection('events')
+          .where('userId', '==', currentUser.uid)
+          .onSnapshot(snapshot => {
+            const evs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setEvents(evs);
+          });
+
+        // Load transactions
+        const unsubTx = db.collection('transactions')
+          .where('userId', '==', currentUser.uid)
+          .onSnapshot(snapshot => {
+            const txs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setTransactions(txs);
+          });
+
+        // Load accounts
+        const unsubAcc = db.collection('accounts')
+          .where('userId', '==', currentUser.uid)
+          .onSnapshot(snapshot => {
+            const accs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setAccounts(accs);
+          });
+
+        return () => {
+          unsubEvents();
+          unsubTx();
+          unsubAcc();
+        };
+      }, [currentUser]);
+
+      // Auth handlers
+      const handleLogout = () => {
+        auth.signOut();
+      };
+
+      const handleLogin = async (e) => {
+        e.preventDefault();
+        const { email, password } = form;
+        try {
+          await auth.signInWithEmailAndPassword(email, password);
+        } catch (err) {
+          alert('Login failed: ' + err.message);
+        }
+      };
+
+      const handleSignup = async (e) => {
+        e.preventDefault();
+        const { email, password, name } = form;
+        try {
+          const res = await auth.createUserWithEmailAndPassword(email, password);
+          await db.collection('users').doc(res.user.uid).set({
+            uid: res.user.uid,
+            email,
+            name: name || email.split('@')[0]
+          });
+        } catch (err) {
+          alert('Signup failed: ' + err.message);
+        }
+      };
+
+      // Event handlers
+      const saveEvent = async () => {
+        if (!form.title || !form.date) {
+          alert('Please fill in title and date');
+          return;
+        }
+        try {
+          if (modal?.eventId) {
+            await db.collection('events').doc(modal.eventId).update({
+              ...form,
+              userId: currentUser.uid,
+              updatedAt: new Date()
+            });
+          } else {
+            await db.collection('events').add({
+              ...form,
+              userId: currentUser.uid,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            });
+          }
+          setModal(null);
+          setForm({});
+        } catch (err) {
+          alert('Error saving event: ' + err.message);
+        }
+      };
+
+      const deleteEvent = async (eventId) => {
+        if (confirm('Delete this event?')) {
+          try {
+            await db.collection('events').doc(eventId).delete();
+          } catch (err) {
+            alert('Error deleting event: ' + err.message);
+          }
+        }
+      };
+
+      // Transaction handlers
+      const saveTransaction = async () => {
+        if (!form.amount || !form.date || !form.category) {
+          alert('Please fill in all fields');
+          return;
+        }
+        try {
+          const amount = parseFloat(form.amount) || 0;
+          if (modal?.txId) {
+            await db.collection('transactions').doc(modal.txId).update({
+              ...form,
+              amount,
+              userId: currentUser.uid,
+              updatedAt: new Date()
+            });
+          } else {
+            await db.collection('transactions').add({
+              ...form,
+              amount,
+              userId: currentUser.uid,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            });
+          }
+          setModal(null);
+          setForm({});
+        } catch (err) {
+          alert('Error saving transaction: ' + err.message);
+        }
+      };
+
+      const deleteTransaction = async (txId) => {
+        if (confirm('Delete this transaction?')) {
+          try {
+            await db.collection('transactions').doc(txId).delete();
+          } catch (err) {
+            alert('Error deleting transaction: ' + err.message);
+          }
+        }
+      };
+
+      // Account handlers
+      const saveAccount = async () => {
+        if (!form.service || !form.username) {
+          alert('Please fill in service and username');
+          return;
+        }
+        try {
+          const password = form.password ? await crypto.encrypt(form.password, 'account-key') : '';
+          if (modal?.accountId) {
+            await db.collection('accounts').doc(modal.accountId).update({
+              service: form.service,
+              username: form.username,
+              password,
+              email: form.email || '',
+              url: form.url || '',
+              notes: form.note || '',
+              userId: currentUser.uid,
+              updatedAt: new Date()
+            });
+          } else {
+            await db.collection('accounts').add({
+              service: form.service,
+              username: form.username,
+              password,
+              email: form.email || '',
+              url: form.url || '',
+              notes: form.note || '',
+              userId: currentUser.uid,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            });
+          }
+          setModal(null);
+          setForm({});
+        } catch (err) {
+          alert('Error saving account: ' + err.message);
+        }
+      };
+
+      const deleteAccount = async (accountId) => {
+        if (confirm('Delete this account?')) {
+          try {
+            await db.collection('accounts').doc(accountId).delete();
+          } catch (err) {
+            alert('Error deleting account: ' + err.message);
+          }
+        }
+      };
+
+      // Render login if not authenticated
+      if (!currentUser) {
+        return React.createElement(LoginScreen, {
+          form,
+          setForm,
+          handleLogin,
+          handleSignup
+        });
+      }
+
+      // Render main app
+      return React.createElement(MainApp, {
+        view,
+        setView,
+        modal,
+        setModal,
+        form,
+        setForm,
+        events,
+        transactions,
+        accounts,
+        categories,
+        calMonth,
+        setCalMonth,
+        calYear,
+        setCalYear,
+        budgetMonth,
+        setBudgetMonth,
+        budgetYear,
+        setBudgetYear,
+        currentUser,
+        saveEvent,
+        deleteEvent,
+        saveTransaction,
+        deleteTransaction,
+        saveAccount,
+        deleteAccount,
+        handleLogout
+      });
+    };
+
+    // Login Screen Component
+    const LoginScreen = ({ form, setForm, handleLogin, handleSignup }) => {
+      const { useState } = React;
+      const [isSignup, setIsSignup] = useState(false);
+
+      return React.createElement('div', {
+        style: {
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          background: 'oklch(96% 0.02 70)',
+          padding: '20px',
+          fontFamily: "'Nunito', sans-serif"
+        }
+      },
+        React.createElement('div', {
+          style: {
+            width: '100%',
+            maxWidth: '400px',
+            background: 'white',
+            borderRadius: '18px',
+            padding: '40px 32px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+          }
+        },
+          React.createElement('div', {
+            style: {
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              marginBottom: '32px'
+            }
+          },
+            React.createElement('div', {
+              style: {
+                width: '50px',
+                height: '50px',
+                borderRadius: '12px',
+                background: 'oklch(64% 0.15 45)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontFamily: "'Quicksand', sans-serif",
+                fontWeight: 700,
+                color: 'white',
+                fontSize: '24px',
+                marginBottom: '16px'
+              }
+            }, 'JY'),
+            React.createElement('h1', {
+              style: {
+                fontSize: '24px',
+                fontWeight: 700,
+                margin: 0,
+                marginBottom: '8px'
+              }
+            }, 'Family Hub'),
+            React.createElement('p', {
+              style: {
+                fontSize: '14px',
+                color: 'oklch(55% 0.02 50)',
+                margin: 0
+              }
+            }, isSignup ? 'Create an account' : 'Welcome back')
+          ),
+          React.createElement('form', {
+            onSubmit: isSignup ? handleSignup : handleLogin,
+            style: { display: 'flex', flexDirection: 'column', gap: '16px' }
+          },
+            React.createElement('div', null,
+              React.createElement('label', {
+                style: {
+                  display: 'block',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: 'oklch(35% 0.02 50)',
+                  marginBottom: '6px'
+                }
+              }, 'Email'),
+              React.createElement('input', {
+                type: 'email',
+                value: form.email || '',
+                onChange: (e) => setForm({ ...form, email: e.target.value }),
+                placeholder: 'your@email.com',
+                required: true,
+                style: {
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid oklch(88% 0.02 70)',
+                  borderRadius: '9px',
+                  fontSize: '14px',
+                  fontFamily: "'Nunito', sans-serif"
+                }
+              })
+            ),
+            React.createElement('div', null,
+              React.createElement('label', {
+                style: {
+                  display: 'block',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: 'oklch(35% 0.02 50)',
+                  marginBottom: '6px'
+                }
+              }, 'Password'),
+              React.createElement('input', {
+                type: 'password',
+                value: form.password || '',
+                onChange: (e) => setForm({ ...form, password: e.target.value }),
+                placeholder: 'At least 6 characters',
+                required: true,
+                minLength: 6,
+                style: {
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid oklch(88% 0.02 70)',
+                  borderRadius: '9px',
+                  fontSize: '14px',
+                  fontFamily: "'Nunito', sans-serif"
+                }
+              })
+            ),
+            isSignup && React.createElement('div', null,
+              React.createElement('label', {
+                style: {
+                  display: 'block',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: 'oklch(35% 0.02 50)',
+                  marginBottom: '6px'
+                }
+              }, 'Name (optional)'),
+              React.createElement('input', {
+                type: 'text',
+                value: form.name || '',
+                onChange: (e) => setForm({ ...form, name: e.target.value }),
+                placeholder: 'Your name',
+                style: {
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid oklch(88% 0.02 70)',
+                  borderRadius: '9px',
+                  fontSize: '14px',
+                  fontFamily: "'Nunito', sans-serif"
+                }
+              })
+            ),
+            React.createElement('button', {
+              type: 'submit',
+              style: {
+                padding: '11px 16px',
+                background: 'oklch(64% 0.15 45)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '9px',
+                fontSize: '14px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                marginTop: '8px'
+              }
+            }, isSignup ? 'Create Account' : 'Sign In')
+          ),
+          React.createElement('div', {
+            style: {
+              textAlign: 'center',
+              marginTop: '20px',
+              fontSize: '13px',
+              color: 'oklch(50% 0.02 50)'
+            }
+          },
+            isSignup ? 'Already have an account? ' : 'Don\'t have an account? ',
+            React.createElement('button', {
+              onClick: () => setIsSignup(!isSignup),
+              style: {
+                background: 'none',
+                border: 'none',
+                color: 'oklch(64% 0.15 45)',
+                fontWeight: 700,
+                cursor: 'pointer',
+                fontSize: '13px'
+              }
+            }, isSignup ? 'Sign In' : 'Sign Up')
+          )
+        )
+      );
+    };
+
+    // Main App Component
+    const MainApp = (props) => {
+      const {
+        view, setView, modal, setModal, form, setForm,
+        events, transactions, accounts, categories,
+        calMonth, setCalMonth, calYear, setCalYear,
+        budgetMonth, setBudgetMonth, budgetYear, setBudgetYear,
+        currentUser, saveEvent, deleteEvent,
+        saveTransaction, deleteTransaction,
+        saveAccount, deleteAccount, handleLogout
+      } = props;
+
+      // Sidebar navigation
+      const navStyle = {
+        padding: '12px 16px',
+        borderRadius: '9px',
+        cursor: 'pointer',
+        fontSize: '14px',
+        fontWeight: 600,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        transition: 'all 0.2s'
+      };
+
+      // Calculate dashboard data
+      const upcomingEvents = events
+        .filter(e => new Date(e.date) >= new Date())
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .slice(0, 3);
+
+      const budgetTxs = transactions.filter(t => {
+        const d = new Date(t.date);
+        return d.getMonth() === budgetMonth && d.getFullYear() === budgetYear;
+      });
+
+      const totalIncome = budgetTxs
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + (t.amount || 0), 0);
+
+      const totalSpent = budgetTxs
+        .filter(t => t.type !== 'income')
+        .reduce((sum, t) => sum + (t.amount || 0), 0);
+
+      const accountsPreview = accounts.slice(0, 3);
+
+      return React.createElement('div', {
+        style: {
+          display: 'flex',
+          minHeight: '100vh',
+          background: 'oklch(96% 0.02 70)'
+        }
+      },
+        // Sidebar
+        React.createElement('aside', {
+          style: {
+            width: '220px',
+            flexShrink: 0,
+            background: 'oklch(99% 0.008 70)',
+            borderRight: '1px solid oklch(90% 0.02 70)',
+            padding: '28px 18px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
+            overflowY: 'auto'
+          }
+        },
+          // Logo
+          React.createElement('div', {
+            style: {
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '0 8px 22px',
+              borderBottom: '1px solid oklch(92% 0.02 70)'
+            }
+          },
+            React.createElement('div', {
+              style: {
+                width: '38px',
+                height: '38px',
+                borderRadius: '12px',
+                background: 'oklch(64% 0.15 45)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontFamily: "'Quicksand', sans-serif",
+                fontWeight: 700,
+                color: 'white',
+                fontSize: '16px'
+              }
+            }, 'JY'),
+            React.createElement('div', {
+              style: {
+                fontFamily: "'Quicksand', sans-serif",
+                fontWeight: 700,
+                fontSize: '16px',
+                color: 'oklch(28% 0.03 50)'
+              }
+            }, 'Our Family Hub')
+          ),
+          // Nav items
+          React.createElement('div', {
+            onClick: () => setView('dashboard'),
+            style: {
+              ...navStyle,
+              background: view === 'dashboard' ? 'oklch(92% 0.06 45)' : 'transparent',
+              color: view === 'dashboard' ? 'oklch(64% 0.15 45)' : 'oklch(55% 0.02 50)'
+            }
+          },
+            React.createElement('span', {
+              style: {
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: view === 'dashboard' ? 'oklch(64% 0.15 45)' : 'transparent'
+              }
+            }),
+            'Dashboard'
+          ),
+          React.createElement('div', {
+            onClick: () => setView('calendar'),
+            style: {
+              ...navStyle,
+              background: view === 'calendar' ? 'oklch(92% 0.06 55)' : 'transparent',
+              color: view === 'calendar' ? 'oklch(64% 0.13 55)' : 'oklch(55% 0.02 50)'
+            }
+          },
+            React.createElement('span', {
+              style: {
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: view === 'calendar' ? 'oklch(64% 0.13 55)' : 'transparent'
+              }
+            }),
+            'Calendar'
+          ),
+          React.createElement('div', {
+            onClick: () => setView('budget'),
+            style: {
+              ...navStyle,
+              background: view === 'budget' ? 'oklch(92% 0.12 145)' : 'transparent',
+              color: view === 'budget' ? 'oklch(60% 0.12 145)' : 'oklch(55% 0.02 50)'
+            }
+          },
+            React.createElement('span', {
+              style: {
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: view === 'budget' ? 'oklch(60% 0.12 145)' : 'transparent'
+              }
+            }),
+            'Budget'
+          ),
+          React.createElement('div', {
+            onClick: () => setView('accounts'),
+            style: {
+              ...navStyle,
+              background: view === 'accounts' ? 'oklch(92% 0.10 260)' : 'transparent',
+              color: view === 'accounts' ? 'oklch(58% 0.10 260)' : 'oklch(55% 0.02 50)'
+            }
+          },
+            React.createElement('span', {
+              style: {
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: view === 'accounts' ? 'oklch(58% 0.10 260)' : 'transparent'
+              }
+            }),
+            'Accounts'
+          ),
+          // Logout
+          React.createElement('div', {
+            style: {
+              marginTop: 'auto',
+              paddingTop: '16px',
+              borderTop: '1px solid oklch(92% 0.02 70)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px'
+            }
+          },
+            React.createElement('div', {
+              style: {
+                fontSize: '12px',
+                color: 'oklch(55% 0.02 50)',
+                wordBreak: 'break-word'
+              }
+            }, currentUser?.email),
+            React.createElement('button', {
+              onClick: handleLogout,
+              style: {
+                padding: '8px 12px',
+                background: 'oklch(92% 0.02 70)',
+                border: '1px solid oklch(88% 0.02 70)',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                color: 'oklch(35% 0.02 50)'
+              }
+            }, 'Sign Out')
+          )
+        ),
+
+        // Main content
+        React.createElement('main', {
+          style: {
+            flex: 1,
+            minWidth: 0,
+            padding: '32px 40px 60px',
+            overflowY: 'auto'
+          }
+        },
+          view === 'dashboard' && React.createElement(DashboardView, {
+            upcomingEvents,
+            totalIncome,
+            totalSpent,
+            accountsPreview,
+            setView,
+            setModal,
+            setForm,
+            onAddEvent: () => setModal({ type: 'event' }),
+            onAddTransaction: () => setModal({ type: 'transaction' }),
+            onAddAccount: () => setModal({ type: 'account' })
+          }),
+          view === 'calendar' && React.createElement(CalendarView, {
+            events,
+            calMonth,
+            setCalMonth,
+            calYear,
+            setCalYear,
+            onAddEvent: () => setModal({ type: 'event' }),
+            onEditEvent: (event) => {
+              setForm(event);
+              setModal({ type: 'event', eventId: event.id });
+            },
+            onDeleteEvent: deleteEvent
+          }),
+          view === 'budget' && React.createElement(BudgetView, {
+            transactions,
+            categories,
+            budgetMonth,
+            setBudgetMonth,
+            budgetYear,
+            setBudgetYear,
+            onAddTransaction: () => setModal({ type: 'transaction' }),
+            onEditTransaction: (tx) => {
+              setForm(tx);
+              setModal({ type: 'transaction', txId: tx.id });
+            },
+            onDeleteTransaction: deleteTransaction
+          }),
+          view === 'accounts' && React.createElement(AccountsView, {
+            accounts,
+            onAddAccount: () => setModal({ type: 'account' }),
+            onEditAccount: (acc) => {
+              setForm(acc);
+              setModal({ type: 'account', accountId: acc.id });
+            },
+            onDeleteAccount: deleteAccount
+          })
+        ),
+
+        // Modal
+        modal && React.createElement(Modal, {
+          modal,
+          form,
+          setForm,
+          onClose: () => {
+            setModal(null);
+            setForm({});
+          },
+          onSave: modal.type === 'event' ? saveEvent : modal.type === 'transaction' ? saveTransaction : saveAccount,
+          categories
+        })
+      );
+    };
+
+    // Dashboard View
+    const DashboardView = ({
+      upcomingEvents, totalIncome, totalSpent, accountsPreview,
+      setView, onAddEvent, onAddTransaction, onAddAccount
+    }) => {
+      return React.createElement('div', null,
+        React.createElement('div', {
+          style: {
+            display: 'flex',
+            alignItems: 'baseline',
+            justifyContent: 'space-between',
+            marginBottom: '26px',
+            flexWrap: 'wrap',
+            gap: '10px'
+          }
+        },
+          React.createElement('div', null,
+            React.createElement('div', {
+              style: {
+                fontFamily: "'Quicksand', sans-serif",
+                fontWeight: 700,
+                fontSize: '28px'
+              }
+            }, 'Good day, Jihoon & Youlim 👋'),
+            React.createElement('div', {
+              style: {
+                color: 'oklch(50% 0.02 50)',
+                fontSize: '15px',
+                marginTop: '4px'
+              }
+            }, 'Here\'s what\'s happening at home.')
+          )
+        ),
+        React.createElement('div', {
+          style: {
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '20px'
+          }
+        },
+          // Upcoming Events Card
+          React.createElement('div', {
+            style: {
+              background: 'oklch(99% 0.008 70)',
+              border: '1px solid oklch(90% 0.02 70)',
+              borderRadius: '18px',
+              padding: '22px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '14px'
+            }
+          },
+            React.createElement('div', {
+              style: {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }
+            },
+              React.createElement('div', {
+                style: {
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontFamily: "'Quicksand', sans-serif",
+                  fontWeight: 700,
+                  fontSize: '16px'
+                }
+              },
+                React.createElement('span', {
+                  style: {
+                    width: '10px',
+                    height: '10px',
+                    borderRadius: '50%',
+                    background: 'oklch(64% 0.13 55)',
+                    display: 'inline-block'
+                  }
+                }),
+                'Upcoming'
+              ),
+              React.createElement('button', {
+                onClick: onAddEvent,
+                style: {
+                  padding: '6px 12px',
+                  background: 'oklch(64% 0.15 45)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }
+              }, '+ Add')
+            ),
+            upcomingEvents.length > 0 ? upcomingEvents.map(ev =>
+              React.createElement('div', {
+                key: ev.id,
+                style: {
+                  display: 'flex',
+                  gap: '10px',
+                  alignItems: 'flex-start',
+                  padding: '9px 0',
+                  borderTop: '1px solid oklch(93% 0.015 70)'
+                }
+              },
+                React.createElement('div', {
+                  style: {
+                    fontSize: '12px',
+                    fontWeight: 800,
+                    color: 'oklch(64% 0.13 55)',
+                    minWidth: '70px'
+                  }
+                }, new Date(ev.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+                React.createElement('div', {
+                  style: { flex: 1, minWidth: 0 }
+                },
+                  React.createElement('div', {
+                    style: {
+                      fontWeight: 700,
+                      fontSize: '14px'
+                    }
+                  }, ev.title),
+                  React.createElement('div', {
+                    style: {
+                      fontSize: '12.5px',
+                      color: 'oklch(50% 0.02 50)'
+                    }
+                  }, ev.time || 'All day')
+                )
+              )
+            ) : React.createElement('div', {
+              style: {
+                fontSize: '13px',
+                color: 'oklch(55% 0.02 50)',
+                padding: '6px 0'
+              }
+            }, 'No upcoming events. Enjoy the quiet!'),
+            React.createElement('div', {
+              onClick: () => setView('calendar'),
+              style: {
+                fontSize: '12.5px',
+                fontWeight: 700,
+                color: 'oklch(64% 0.13 55)',
+                cursor: 'pointer'
+              }
+            }, 'View full calendar →')
+          ),
+
+          // Budget Card
+          React.createElement('div', {
+            style: {
+              background: 'oklch(99% 0.008 70)',
+              border: '1px solid oklch(90% 0.02 70)',
+              borderRadius: '18px',
+              padding: '22px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '14px'
+            }
+          },
+            React.createElement('div', {
+              style: {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }
+            },
+              React.createElement('div', {
+                style: {
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontFamily: "'Quicksand', sans-serif",
+                  fontWeight: 700,
+                  fontSize: '16px'
+                }
+              },
+                React.createElement('span', {
+                  style: {
+                    width: '10px',
+                    height: '10px',
+                    borderRadius: '50%',
+                    background: 'oklch(60% 0.12 145)',
+                    display: 'inline-block'
+                  }
+                }),
+                'Budget'
+              ),
+              React.createElement('button', {
+                onClick: onAddTransaction,
+                style: {
+                  padding: '6px 12px',
+                  background: 'oklch(60% 0.12 145)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }
+              }, '+ Add')
+            ),
+            React.createElement('div', {
+              style: {
+                fontSize: '13px',
+                fontWeight: 700,
+                color: 'oklch(50% 0.02 50)',
+                textAlign: 'right'
+              }
+            }, `Income: $${totalIncome.toFixed(2)}`),
+            React.createElement('div', {
+              style: {
+                height: '26px',
+                borderRadius: '8px',
+                background: 'oklch(92% 0.02 70)',
+                overflow: 'hidden',
+                position: 'relative'
+              }
+            },
+              React.createElement('div', {
+                style: {
+                  height: '100%',
+                  width: `${totalIncome > 0 ? Math.min(100, (totalSpent / totalIncome) * 100) : 0}%`,
+                  background: 'oklch(60% 0.12 145)',
+                  borderRadius: '6px'
+                }
+              }),
+              React.createElement('div', {
+                style: {
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '0 10px',
+                  fontSize: '11.5px',
+                  fontWeight: 700,
+                  color: 'oklch(35% 0.02 50)'
+                }
+              },
+                `$${totalSpent.toFixed(2)} spent`,
+                `$${Math.max(0, totalIncome - totalSpent).toFixed(2)} left`
+              )
+            ),
+            React.createElement('div', {
+              onClick: () => setView('budget'),
+              style: {
+                fontSize: '12.5px',
+                fontWeight: 700,
+                color: 'oklch(60% 0.12 145)',
+                cursor: 'pointer'
+              }
+            }, 'View full budget →')
+          ),
+
+          // Accounts Card
+          React.createElement('div', {
+            style: {
+              background: 'oklch(99% 0.008 70)',
+              border: '1px solid oklch(90% 0.02 70)',
+              borderRadius: '18px',
+              padding: '22px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '14px'
+            }
+          },
+            React.createElement('div', {
+              style: {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }
+            },
+              React.createElement('div', {
+                style: {
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontFamily: "'Quicksand', sans-serif",
+                  fontWeight: 700,
+                  fontSize: '16px'
+                }
+              },
+                React.createElement('span', {
+                  style: {
+                    width: '10px',
+                    height: '10px',
+                    borderRadius: '50%',
+                    background: 'oklch(58% 0.10 260)',
+                    display: 'inline-block'
+                  }
+                }),
+                'Accounts'
+              ),
+              React.createElement('button', {
+                onClick: onAddAccount,
+                style: {
+                  padding: '6px 12px',
+                  background: 'oklch(58% 0.10 260)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }
+              }, '+ Add')
+            ),
+            accountsPreview.length > 0 ? accountsPreview.map(acc =>
+              React.createElement('div', {
+                key: acc.id,
+                style: {
+                  display: 'flex',
+                  gap: '10px',
+                  alignItems: 'center',
+                  padding: '9px 0',
+                  borderTop: '1px solid oklch(93% 0.015 70)'
+                }
+              },
+                React.createElement('div', {
+                  style: {
+                    width: '30px',
+                    height: '30px',
+                    borderRadius: '9px',
+                    background: 'oklch(93% 0.03 260)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 800,
+                    fontSize: '13px',
+                    color: 'oklch(58% 0.10 260)',
+                    flexShrink: 0
+                  }
+                }, (acc.service || '?').charAt(0).toUpperCase()),
+                React.createElement('div', {
+                  style: { flex: 1, minWidth: 0 }
+                },
+                  React.createElement('div', {
+                    style: {
+                      fontWeight: 700,
+                      fontSize: '14px'
+                    }
+                  }, acc.service),
+                  React.createElement('div', {
+                    style: {
+                      fontSize: '12px',
+                      color: 'oklch(50% 0.02 50)'
+                    }
+                  }, acc.username)
+                )
+              )
+            ) : React.createElement('div', {
+              style: {
+                fontSize: '13px',
+                color: 'oklch(55% 0.02 50)',
+                padding: '6px 0'
+              }
+            }, 'No accounts saved yet'),
+            React.createElement('div', {
+              onClick: () => setView('accounts'),
+              style: {
+                fontSize: '12.5px',
+                fontWeight: 700,
+                color: 'oklch(58% 0.10 260)',
+                cursor: 'pointer'
+              }
+            }, 'View all accounts →')
+          )
+        )
+      );
+    };
+
+    // Calendar View (simplified)
+    const CalendarView = ({
+      events, calMonth, setCalMonth, calYear, setCalYear,
+      onAddEvent, onEditEvent, onDeleteEvent
+    }) => {
+      return React.createElement('div', null,
+        React.createElement('div', {
+          style: {
+            display: 'flex',
+            alignItems: 'baseline',
+            justifyContent: 'space-between',
+            marginBottom: '26px'
+          }
+        },
+          React.createElement('h2', {
+            style: {
+              fontSize: '24px',
+              fontWeight: 700,
+              margin: 0
+            }
+          }, `${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][calMonth]} ${calYear}`),
+          React.createElement('button', {
+            onClick: onAddEvent,
+            style: {
+              padding: '10px 16px',
+              background: 'oklch(64% 0.15 45)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '9px',
+              fontSize: '14px',
+              fontWeight: 700,
+              cursor: 'pointer'
+            }
+          }, '+ Add Event')
+        ),
+        React.createElement('div', {
+          style: {
+            background: 'oklch(99% 0.008 70)',
+            border: '1px solid oklch(90% 0.02 70)',
+            borderRadius: '18px',
+            padding: '20px'
+          }
+        },
+          React.createElement('div', {
+            style: {
+              display: 'flex',
+              gap: '8px',
+              marginBottom: '16px'
+            }
+          },
+            React.createElement('button', {
+              onClick: () => setCalMonth(m => m === 0 ? 11 : m - 1),
+              style: {
+                padding: '8px 12px',
+                background: 'oklch(92% 0.02 70)',
+                border: '1px solid oklch(88% 0.02 70)',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }
+            }, '← Prev'),
+            React.createElement('button', {
+              onClick: () => { setCalMonth(new Date().getMonth()); setCalYear(new Date().getFullYear()); },
+              style: {
+                padding: '8px 12px',
+                background: 'oklch(92% 0.02 70)',
+                border: '1px solid oklch(88% 0.02 70)',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }
+            }, 'Today'),
+            React.createElement('button', {
+              onClick: () => setCalMonth(m => m === 11 ? 0 : m + 1),
+              style: {
+                padding: '8px 12px',
+                background: 'oklch(92% 0.02 70)',
+                border: '1px solid oklch(88% 0.02 70)',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }
+            }, 'Next →')
+          ),
+          React.createElement('div', {
+            style: {
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px'
+            }
+          },
+            events
+              .filter(e => {
+                const d = new Date(e.date);
+                return d.getMonth() === calMonth && d.getFullYear() === calYear;
+              })
+              .sort((a, b) => new Date(a.date) - new Date(b.date))
+              .map(ev =>
+                React.createElement('div', {
+                  key: ev.id,
+                  style: {
+                    padding: '12px',
+                    background: 'oklch(96% 0.02 70)',
+                    borderRadius: '9px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }
+                },
+                  React.createElement('div', null,
+                    React.createElement('div', {
+                      style: { fontWeight: 700 }
+                    }, ev.title),
+                    React.createElement('div', {
+                      style: {
+                        fontSize: '13px',
+                        color: 'oklch(50% 0.02 50)'
+                      }
+                    }, new Date(ev.date).toLocaleDateString() + (ev.time ? ` at ${ev.time}` : ''))
+                  ),
+                  React.createElement('div', {
+                    style: {
+                      display: 'flex',
+                      gap: '8px'
+                    }
+                  },
+                    React.createElement('button', {
+                      onClick: () => onEditEvent(ev),
+                      style: {
+                        padding: '6px 10px',
+                        background: 'oklch(92% 0.06 55)',
+                        border: '1px solid oklch(85% 0.06 55)',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                      }
+                    }, 'Edit'),
+                    React.createElement('button', {
+                      onClick: () => onDeleteEvent(ev.id),
+                      style: {
+                        padding: '6px 10px',
+                        background: 'oklch(92% 0.06 25)',
+                        border: '1px solid oklch(85% 0.06 25)',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        color: 'oklch(60% 0.15 25)'
+                      }
+                    }, 'Delete')
+                  )
+                )
+              ),
+            events.filter(e => {
+              const d = new Date(e.date);
+              return d.getMonth() === calMonth && d.getFullYear() === calYear;
+            }).length === 0 && React.createElement('div', {
+              style: {
+                textAlign: 'center',
+                padding: '20px',
+                color: 'oklch(55% 0.02 50)'
+              }
+            }, 'No events this month')
+          )
+        )
+      );
+    };
+
+    // Budget View (simplified)
+    const BudgetView = ({
+      transactions, categories, budgetMonth, setBudgetMonth, budgetYear, setBudgetYear,
+      onAddTransaction, onEditTransaction, onDeleteTransaction
+    }) => {
+      const budgetTxs = transactions.filter(t => {
+        const d = new Date(t.date);
+        return d.getMonth() === budgetMonth && d.getFullYear() === budgetYear;
+      });
+
+      const totalIncome = budgetTxs
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + (t.amount || 0), 0);
+
+      const totalSpent = budgetTxs
+        .filter(t => t.type !== 'income')
+        .reduce((sum, t) => sum + (t.amount || 0), 0);
+
+      return React.createElement('div', null,
+        React.createElement('div', {
+          style: {
+            display: 'flex',
+            alignItems: 'baseline',
+            justifyContent: 'space-between',
+            marginBottom: '26px'
+          }
+        },
+          React.createElement('h2', {
+            style: {
+              fontSize: '24px',
+              fontWeight: 700,
+              margin: 0
+            }
+          }, `${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][budgetMonth]} ${budgetYear}`),
+          React.createElement('button', {
+            onClick: onAddTransaction,
+            style: {
+              padding: '10px 16px',
+              background: 'oklch(60% 0.12 145)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '9px',
+              fontSize: '14px',
+              fontWeight: 700,
+              cursor: 'pointer'
+            }
+          }, '+ Add Transaction')
+        ),
+        React.createElement('div', {
+          style: {
+            background: 'oklch(99% 0.008 70)',
+            border: '1px solid oklch(90% 0.02 70)',
+            borderRadius: '18px',
+            padding: '20px',
+            marginBottom: '20px'
+          }
+        },
+          React.createElement('div', {
+            style: {
+              display: 'flex',
+              gap: '8px',
+              marginBottom: '16px'
+            }
+          },
+            React.createElement('button', {
+              onClick: () => setBudgetMonth(m => m === 0 ? 11 : m - 1),
+              style: {
+                padding: '8px 12px',
+                background: 'oklch(92% 0.02 70)',
+                border: '1px solid oklch(88% 0.02 70)',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }
+            }, '← Prev'),
+            React.createElement('button', {
+              onClick: () => { setBudgetMonth(new Date().getMonth()); setBudgetYear(new Date().getFullYear()); },
+              style: {
+                padding: '8px 12px',
+                background: 'oklch(92% 0.02 70)',
+                border: '1px solid oklch(88% 0.02 70)',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }
+            }, 'Today'),
+            React.createElement('button', {
+              onClick: () => setBudgetMonth(m => m === 11 ? 0 : m + 1),
+              style: {
+                padding: '8px 12px',
+                background: 'oklch(92% 0.02 70)',
+                border: '1px solid oklch(88% 0.02 70)',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }
+            }, 'Next →')
+          ),
+          React.createElement('div', {
+            style: {
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+              gap: '12px',
+              marginBottom: '16px'
+            }
+          },
+            React.createElement('div', {
+              style: {
+                background: 'oklch(96% 0.02 70)',
+                padding: '12px',
+                borderRadius: '9px'
+              }
+            },
+              React.createElement('div', {
+                style: {
+                  fontSize: '12px',
+                  color: 'oklch(55% 0.02 50)',
+                  marginBottom: '4px'
+                }
+              }, 'Total Income'),
+              React.createElement('div', {
+                style: {
+                  fontSize: '20px',
+                  fontWeight: 700,
+                  color: 'oklch(55% 0.12 145)'
+                }
+              }, `$${totalIncome.toFixed(2)}`)
+            ),
+            React.createElement('div', {
+              style: {
+                background: 'oklch(96% 0.02 70)',
+                padding: '12px',
+                borderRadius: '9px'
+              }
+            },
+              React.createElement('div', {
+                style: {
+                  fontSize: '12px',
+                  color: 'oklch(55% 0.02 50)',
+                  marginBottom: '4px'
+                }
+              }, 'Total Spent'),
+              React.createElement('div', {
+                style: {
+                  fontSize: '20px',
+                  fontWeight: 700,
+                  color: 'oklch(60% 0.15 25)'
+                }
+              }, `$${totalSpent.toFixed(2)}`)
+            ),
+            React.createElement('div', {
+              style: {
+                background: 'oklch(96% 0.02 70)',
+                padding: '12px',
+                borderRadius: '9px'
+              }
+            },
+              React.createElement('div', {
+                style: {
+                  fontSize: '12px',
+                  color: 'oklch(55% 0.02 50)',
+                  marginBottom: '4px'
+                }
+              }, 'Remaining'),
+              React.createElement('div', {
+                style: {
+                  fontSize: '20px',
+                  fontWeight: 700,
+                  color: totalIncome - totalSpent >= 0 ? 'oklch(55% 0.12 145)' : 'oklch(60% 0.15 25)'
+                }
+              }, `$${Math.max(0, totalIncome - totalSpent).toFixed(2)}`)
+            )
+          )
+        ),
+        React.createElement('div', {
+          style: {
+            background: 'oklch(99% 0.008 70)',
+            border: '1px solid oklch(90% 0.02 70)',
+            borderRadius: '18px',
+            padding: '20px'
+          }
+        },
+          React.createElement('h3', {
+            style: {
+              fontSize: '16px',
+              fontWeight: 700,
+              margin: '0 0 16px 0'
+            }
+          }, 'Transactions'),
+          React.createElement('div', {
+            style: {
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px'
+            }
+          },
+            budgetTxs
+              .sort((a, b) => new Date(b.date) - new Date(a.date))
+              .map(tx =>
+                React.createElement('div', {
+                  key: tx.id,
+                  style: {
+                    padding: '12px',
+                    background: 'oklch(96% 0.02 70)',
+                    borderRadius: '9px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }
+                },
+                  React.createElement('div', null,
+                    React.createElement('div', {
+                      style: { fontWeight: 700 }
+                    }, tx.category),
+                    React.createElement('div', {
+                      style: {
+                        fontSize: '13px',
+                        color: 'oklch(50% 0.02 50)'
+                      }
+                    }, new Date(tx.date).toLocaleDateString() + (tx.desc ? ` - ${tx.desc}` : ''))
+                  ),
+                  React.createElement('div', {
+                    style: {
+                      display: 'flex',
+                      gap: '8px',
+                      alignItems: 'center'
+                    }
+                  },
+                    React.createElement('span', {
+                      style: {
+                        fontWeight: 700,
+                        color: tx.type === 'income' ? 'oklch(55% 0.12 145)' : 'oklch(60% 0.15 25)',
+                        minWidth: '80px',
+                        textAlign: 'right'
+                      }
+                    }, `${tx.type === 'income' ? '+' : '-'}$${parseFloat(tx.amount || 0).toFixed(2)}`),
+                    React.createElement('button', {
+                      onClick: () => onEditTransaction(tx),
+                      style: {
+                        padding: '4px 8px',
+                        background: 'oklch(92% 0.02 70)',
+                        border: '1px solid oklch(88% 0.02 70)',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '11px'
+                      }
+                    }, 'Edit'),
+                    React.createElement('button', {
+                      onClick: () => onDeleteTransaction(tx.id),
+                      style: {
+                        padding: '4px 8px',
+                        background: 'oklch(92% 0.06 25)',
+                        border: '1px solid oklch(85% 0.06 25)',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '11px',
+                        color: 'oklch(60% 0.15 25)'
+                      }
+                    }, 'Delete')
+                  )
+                )
+              ),
+            budgetTxs.length === 0 && React.createElement('div', {
+              style: {
+                textAlign: 'center',
+                padding: '20px',
+                color: 'oklch(55% 0.02 50)'
+              }
+            }, 'No transactions this month')
+          )
+        )
+      );
+    };
+
+    // Accounts View
+    const AccountsView = ({
+      accounts, onAddAccount, onEditAccount, onDeleteAccount
+    }) => {
+      const { useState } = React;
+      const [revealedIds, setRevealedIds] = useState({});
+
+      const toggleReveal = (id) => {
+        setRevealedIds(prev => ({
+          ...prev,
+          [id]: !prev[id]
+        }));
+      };
+
+      return React.createElement('div', null,
+        React.createElement('div', {
+          style: {
+            display: 'flex',
+            alignItems: 'baseline',
+            justifyContent: 'space-between',
+            marginBottom: '26px'
+          }
+        },
+          React.createElement('h2', {
+            style: {
+              fontSize: '24px',
+              fontWeight: 700,
+              margin: 0
+            }
+          }, 'Accounts & Passwords'),
+          React.createElement('button', {
+            onClick: onAddAccount,
+            style: {
+              padding: '10px 16px',
+              background: 'oklch(58% 0.10 260)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '9px',
+              fontSize: '14px',
+              fontWeight: 700,
+              cursor: 'pointer'
+            }
+          }, '+ Add Account')
+        ),
+        React.createElement('div', {
+          style: {
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gap: '16px'
+          }
+        },
+          accounts.map(acc =>
+            React.createElement('div', {
+              key: acc.id,
+              style: {
+                background: 'oklch(99% 0.008 70)',
+                border: '1px solid oklch(90% 0.02 70)',
+                borderRadius: '18px',
+                padding: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px'
+              }
+            },
+              React.createElement('div', {
+                style: {
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px'
+                }
+              },
+                React.createElement('div', {
+                  style: {
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '9px',
+                    background: 'oklch(93% 0.03 260)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 800,
+                    fontSize: '16px',
+                    color: 'oklch(58% 0.10 260)',
+                    flexShrink: 0
+                  }
+                }, (acc.service || '?').charAt(0).toUpperCase()),
+                React.createElement('div', {
+                  style: { flex: 1, minWidth: 0 }
+                },
+                  React.createElement('div', {
+                    style: {
+                      fontWeight: 700,
+                      fontSize: '15px'
+                    }
+                  }, acc.service),
+                  React.createElement('div', {
+                    style: {
+                      fontSize: '12px',
+                      color: 'oklch(50% 0.02 50)'
+                    }
+                  }, acc.username)
+                )
+              ),
+              acc.email && React.createElement('div', {
+                style: {
+                  fontSize: '12px',
+                  color: 'oklch(50% 0.02 50)',
+                  wordBreak: 'break-all'
+                }
+              }, `Email: ${acc.email}`),
+              acc.url && React.createElement('a', {
+                href: acc.url,
+                target: '_blank',
+                rel: 'noopener noreferrer',
+                style: {
+                  fontSize: '12px',
+                  color: 'oklch(58% 0.10 260)',
+                  textDecoration: 'none',
+                  wordBreak: 'break-all'
+                }
+              }, acc.url),
+              React.createElement('div', {
+                style: {
+                  display: 'flex',
+                  gap: '8px'
+                }
+              },
+                React.createElement('button', {
+                  onClick: () => onEditAccount(acc),
+                  style: {
+                    flex: 1,
+                    padding: '8px 12px',
+                    background: 'oklch(92% 0.10 260)',
+                    border: '1px solid oklch(85% 0.10 260)',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: 'oklch(58% 0.10 260)'
+                  }
+                }, 'Edit'),
+                React.createElement('button', {
+                  onClick: () => onDeleteAccount(acc.id),
+                  style: {
+                    flex: 1,
+                    padding: '8px 12px',
+                    background: 'oklch(92% 0.06 25)',
+                    border: '1px solid oklch(85% 0.06 25)',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: 'oklch(60% 0.15 25)'
+                  }
+                }, 'Delete')
+              )
+            )
+          ),
+          accounts.length === 0 && React.createElement('div', {
+            style: {
+              gridColumn: '1 / -1',
+              textAlign: 'center',
+              padding: '40px 20px',
+              color: 'oklch(55% 0.02 50)'
+            }
+          }, 'No accounts saved. Add one to get started.')
+        )
+      );
+    };
+
+    // Modal Component
+    const Modal = ({ modal, form, setForm, onClose, onSave, categories }) => {
+      return React.createElement('div', {
+        onClick: onClose,
+        style: {
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }
+      },
+        React.createElement('div', {
+          onClick: (e) => e.stopPropagation(),
+          style: {
+            background: 'white',
+            borderRadius: '18px',
+            padding: '32px',
+            maxWidth: '500px',
+            width: '90%',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }
+        },
+          React.createElement('h2', {
+            style: {
+              fontSize: '20px',
+              fontWeight: 700,
+              margin: '0 0 24px 0'
+            }
+          }, modal.type === 'event' ? (modal.eventId ? 'Edit Event' : 'Add Event') : modal.type === 'transaction' ? (modal.txId ? 'Edit Transaction' : 'Add Transaction') : modal.type === 'account' ? (modal.accountId ? 'Edit Account' : 'Add Account') : 'Add Item'),
+          React.createElement('div', {
+            style: {
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px'
+            }
+          },
+            modal.type === 'event' && React.createElement('div', null,
+              React.createElement('label', {
+                style: {
+                  display: 'block',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: 'oklch(35% 0.02 50)',
+                  marginBottom: '6px'
+                }
+              }, 'Event Title *'),
+              React.createElement('input', {
+                type: 'text',
+                value: form.title || '',
+                onChange: (e) => setForm({ ...form, title: e.target.value }),
+                placeholder: 'Event name',
+                style: {
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid oklch(88% 0.02 70)',
+                  borderRadius: '9px',
+                  fontSize: '14px',
+                  fontFamily: "'Nunito', sans-serif"
+                }
+              }),
+              React.createElement('label', {
+                style: {
+                  display: 'block',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: 'oklch(35% 0.02 50)',
+                  marginBottom: '6px',
+                  marginTop: '12px'
+                }
+              }, 'Date *'),
+              React.createElement('input', {
+                type: 'date',
+                value: form.date || '',
+                onChange: (e) => setForm({ ...form, date: e.target.value }),
+                style: {
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid oklch(88% 0.02 70)',
+                  borderRadius: '9px',
+                  fontSize: '14px',
+                  fontFamily: "'Nunito', sans-serif"
+                }
+              }),
+              React.createElement('label', {
+                style: {
+                  display: 'block',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: 'oklch(35% 0.02 50)',
+                  marginBottom: '6px',
+                  marginTop: '12px'
+                }
+              }, 'Time'),
+              React.createElement('input', {
+                type: 'time',
+                value: form.time || '',
+                onChange: (e) => setForm({ ...form, time: e.target.value }),
+                style: {
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid oklch(88% 0.02 70)',
+                  borderRadius: '9px',
+                  fontSize: '14px',
+                  fontFamily: "'Nunito', sans-serif"
+                }
+              }),
+              React.createElement('label', {
+                style: {
+                  display: 'block',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: 'oklch(35% 0.02 50)',
+                  marginBottom: '6px',
+                  marginTop: '12px'
+                }
+              }, 'Person'),
+              React.createElement('select', {
+                value: form.person || '',
+                onChange: (e) => setForm({ ...form, person: e.target.value }),
+                style: {
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid oklch(88% 0.02 70)',
+                  borderRadius: '9px',
+                  fontSize: '14px',
+                  fontFamily: "'Nunito', sans-serif"
+                }
+              },
+                React.createElement('option', { value: '' }, 'Select person'),
+                React.createElement('option', { value: 'Jihoon' }, 'Jihoon'),
+                React.createElement('option', { value: 'Youlim' }, 'Youlim'),
+                React.createElement('option', { value: 'Both' }, 'Both')
+              )
+            ),
+            modal.type === 'transaction' && React.createElement('div', null,
+              React.createElement('label', {
+                style: {
+                  display: 'block',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: 'oklch(35% 0.02 50)',
+                  marginBottom: '6px'
+                }
+              }, 'Type *'),
+              React.createElement('select', {
+                value: form.type || 'expense',
+                onChange: (e) => setForm({ ...form, type: e.target.value }),
+                style: {
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid oklch(88% 0.02 70)',
+                  borderRadius: '9px',
+                  fontSize: '14px',
+                  fontFamily: "'Nunito', sans-serif"
+                }
+              },
+                React.createElement('option', { value: 'income' }, 'Income'),
+                React.createElement('option', { value: 'expense' }, 'Expense')
+              ),
+              React.createElement('label', {
+                style: {
+                  display: 'block',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: 'oklch(35% 0.02 50)',
+                  marginBottom: '6px',
+                  marginTop: '12px'
+                }
+              }, 'Category *'),
+              React.createElement('select', {
+                value: form.category || '',
+                onChange: (e) => setForm({ ...form, category: e.target.value }),
+                style: {
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid oklch(88% 0.02 70)',
+                  borderRadius: '9px',
+                  fontSize: '14px',
+                  fontFamily: "'Nunito', sans-serif"
+                }
+              },
+                React.createElement('option', { value: '' }, 'Select category'),
+                categories.map(c => React.createElement('option', { key: c.id, value: c.name }, c.name))
+              ),
+              React.createElement('label', {
+                style: {
+                  display: 'block',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: 'oklch(35% 0.02 50)',
+                  marginBottom: '6px',
+                  marginTop: '12px'
+                }
+              }, 'Amount ($) *'),
+              React.createElement('input', {
+                type: 'number',
+                step: '0.01',
+                value: form.amount || '',
+                onChange: (e) => setForm({ ...form, amount: e.target.value }),
+                placeholder: '0.00',
+                style: {
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid oklch(88% 0.02 70)',
+                  borderRadius: '9px',
+                  fontSize: '14px',
+                  fontFamily: "'Nunito', sans-serif"
+                }
+              }),
+              React.createElement('label', {
+                style: {
+                  display: 'block',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: 'oklch(35% 0.02 50)',
+                  marginBottom: '6px',
+                  marginTop: '12px'
+                }
+              }, 'Date *'),
+              React.createElement('input', {
+                type: 'date',
+                value: form.date || '',
+                onChange: (e) => setForm({ ...form, date: e.target.value }),
+                style: {
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid oklch(88% 0.02 70)',
+                  borderRadius: '9px',
+                  fontSize: '14px',
+                  fontFamily: "'Nunito', sans-serif"
+                }
+              }),
+              React.createElement('label', {
+                style: {
+                  display: 'block',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: 'oklch(35% 0.02 50)',
+                  marginBottom: '6px',
+                  marginTop: '12px'
+                }
+              }, 'Notes'),
+              React.createElement('input', {
+                type: 'text',
+                value: form.desc || '',
+                onChange: (e) => setForm({ ...form, desc: e.target.value }),
+                placeholder: 'Optional notes',
+                style: {
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid oklch(88% 0.02 70)',
+                  borderRadius: '9px',
+                  fontSize: '14px',
+                  fontFamily: "'Nunito', sans-serif"
+                }
+              })
+            ),
+            modal.type === 'account' && React.createElement('div', null,
+              React.createElement('label', {
+                style: {
+                  display: 'block',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: 'oklch(35% 0.02 50)',
+                  marginBottom: '6px'
+                }
+              }, 'Service Name *'),
+              React.createElement('input', {
+                type: 'text',
+                value: form.service || '',
+                onChange: (e) => setForm({ ...form, service: e.target.value }),
+                placeholder: 'e.g. Gmail, Netflix',
+                style: {
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid oklch(88% 0.02 70)',
+                  borderRadius: '9px',
+                  fontSize: '14px',
+                  fontFamily: "'Nunito', sans-serif"
+                }
+              }),
+              React.createElement('label', {
+                style: {
+                  display: 'block',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: 'oklch(35% 0.02 50)',
+                  marginBottom: '6px',
+                  marginTop: '12px'
+                }
+              }, 'Username *'),
+              React.createElement('input', {
+                type: 'text',
+                value: form.username || '',
+                onChange: (e) => setForm({ ...form, username: e.target.value }),
+                placeholder: 'Username or email',
+                style: {
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid oklch(88% 0.02 70)',
+                  borderRadius: '9px',
+                  fontSize: '14px',
+                  fontFamily: "'Nunito', sans-serif"
+                }
+              }),
+              React.createElement('label', {
+                style: {
+                  display: 'block',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: 'oklch(35% 0.02 50)',
+                  marginBottom: '6px',
+                  marginTop: '12px'
+                }
+              }, 'Password'),
+              React.createElement('input', {
+                type: 'password',
+                value: form.password || '',
+                onChange: (e) => setForm({ ...form, password: e.target.value }),
+                placeholder: 'Leave empty to keep existing',
+                style: {
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid oklch(88% 0.02 70)',
+                  borderRadius: '9px',
+                  fontSize: '14px',
+                  fontFamily: "'Nunito', sans-serif"
+                }
+              }),
+              React.createElement('label', {
+                style: {
+                  display: 'block',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: 'oklch(35% 0.02 50)',
+                  marginBottom: '6px',
+                  marginTop: '12px'
+                }
+              }, 'Email'),
+              React.createElement('input', {
+                type: 'email',
+                value: form.email || '',
+                onChange: (e) => setForm({ ...form, email: e.target.value }),
+                placeholder: 'Account email',
+                style: {
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid oklch(88% 0.02 70)',
+                  borderRadius: '9px',
+                  fontSize: '14px',
+                  fontFamily: "'Nunito', sans-serif"
+                }
+              }),
+              React.createElement('label', {
+                style: {
+                  display: 'block',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: 'oklch(35% 0.02 50)',
+                  marginBottom: '6px',
+                  marginTop: '12px'
+                }
+              }, 'URL'),
+              React.createElement('input', {
+                type: 'url',
+                value: form.url || '',
+                onChange: (e) => setForm({ ...form, url: e.target.value }),
+                placeholder: 'https://...',
+                style: {
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid oklch(88% 0.02 70)',
+                  borderRadius: '9px',
+                  fontSize: '14px',
+                  fontFamily: "'Nunito', sans-serif"
+                }
+              })
+            )
+          ),
+          React.createElement('div', {
+            style: {
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'flex-end',
+              marginTop: '24px'
+            }
+          },
+            React.createElement('button', {
+              onClick: onClose,
+              style: {
+                padding: '10px 16px',
+                background: 'oklch(92% 0.02 70)',
+                border: '1px solid oklch(88% 0.02 70)',
+                borderRadius: '9px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 600
+              }
+            }, 'Cancel'),
+            React.createElement('button', {
+              onClick: onSave,
+              style: {
+                padding: '10px 16px',
+                background: 'oklch(64% 0.15 45)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '9px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 700
+              }
+            }, 'Save')
+          )
+        )
+      );
+    };
+
+    // Render app
+    function renderApp() {
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(React.createElement(App));
+    }
+
+    // Initial render
+    renderApp();
+  </script>
+</body>
+</html>
