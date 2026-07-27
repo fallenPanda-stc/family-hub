@@ -1,317 +1,183 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Family Hub">
-  <title>Family Hub - Shared Calendar & Budget</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Family Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; width: 100%; }
-    body {
-      margin: 0;
-      background: oklch(96% 0.02 70);
-      font-family: 'Nunito', sans-serif;
-      color: oklch(28% 0.03 50);
-    }
-    #root { width: 100%; height: 100%; }
-    input, select, textarea { font-family: 'Nunito', sans-serif; }
-    .loading-screen {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      background: oklch(96% 0.02 70);
-      gap: 20px;
-    }
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid oklch(88% 0.02 70);
-      border-top-color: oklch(64% 0.15 45);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
+    body { font-family: Nunito, sans-serif; background: #f5f0ea; color: #1a1a1a; }
+    #root { width: 100%; height: 100vh; }
+    .container { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+    .card { background: white; border-radius: 12px; padding: 40px; max-width: 400px; width: 100%; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .logo { width: 50px; height: 50px; background: #a366cc; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 20px; margin: 0 auto 20px; }
+    h1 { font-size: 24px; margin-bottom: 8px; text-align: center; }
+    .subtitle { font-size: 14px; color: #888; text-align: center; margin-bottom: 24px; }
+    input { width: 100%; padding: 10px 12px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; font-family: inherit; }
+    button { width: 100%; padding: 10px; background: #a366cc; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; }
+    button:hover { background: #8b4fb5; }
+    .toggle { text-align: center; font-size: 13px; margin-top: 16px; }
+    .toggle button { width: auto; background: none; color: #a366cc; padding: 0; margin: 0; }
+    .toggle button:hover { text-decoration: underline; }
+    .error { color: #c41e3a; font-size: 12px; margin-bottom: 12px; }
+    .loading { text-align: center; color: #888; }
+    .spinner { width: 30px; height: 30px; border: 3px solid #ddd; border-top-color: #a366cc; border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .welcome { text-align: center; }
+    .welcome h2 { font-size: 28px; margin-bottom: 16px; }
+    .welcome p { color: #888; margin-bottom: 24px; }
   </style>
 </head>
 <body>
   <div id="root">
-    <div class="loading-screen">
-      <div class="spinner"></div>
-      <p>Loading Family Hub...</p>
+    <div class="container">
+      <div class="card">
+        <div class="spinner"></div>
+        <div class="loading">Loading Family Hub...</div>
+      </div>
     </div>
   </div>
 
-  <!-- React -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  
-  <!-- Firebase (Global) -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js"></script>
+  <!-- Firebase using compat CDN (guaranteed to work) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
   <script>
-    // Wait for Firebase to load
-    function waitForFirebase() {
-      return new Promise((resolve) => {
-        if (typeof firebase !== 'undefined' && firebase.initializeApp) {
-          resolve();
-        } else {
-          setTimeout(() => waitForFirebase().then(resolve), 100);
-        }
-      });
-    }
+    // Initialize when this script runs (compat versions guarantee firebase exists)
+    const firebaseConfig = {
+      apiKey: "AIzaSyAG__3I_UfExpHiVAsf2ev9CY3flmmlnbQ",
+      authDomain: "haribo-82b77.firebaseapp.com",
+      projectId: "haribo-82b77",
+      storageBucket: "haribo-82b77.firebasestorage.app",
+      messagingSenderId: "437120438002",
+      appId: "1:437120438002:web:52c2746b6553fafbe24a6b"
+    };
 
-    waitForFirebase().then(() => {
-      // Firebase config
-      const config = {
-        apiKey: "AIzaSyAG__3I_UfExpHiVAsf2ev9CY3flmmlnbQ",
-        authDomain: "haribo-82b77.firebaseapp.com",
-        projectId: "haribo-82b77",
-        storageBucket: "haribo-82b77.firebasestorage.app",
-        messagingSenderId: "437120438002",
-        appId: "1:437120438002:web:52c2746b6553fafbe24a6b"
-      };
-
-      firebase.initializeApp(config);
+    try {
+      firebase.initializeApp(firebaseConfig);
       const auth = firebase.auth();
       const db = firebase.firestore();
 
       let currentUser = null;
 
-      // Watch auth state
-      auth.onAuthStateChanged(user => {
+      auth.onAuthStateChanged((user) => {
         currentUser = user;
         render();
       });
 
-      // Login handler
-      function handleLogin(email, password) {
-        auth.signInWithEmailAndPassword(email, password)
-          .catch(err => alert('Error: ' + err.message));
-      }
-
-      // Signup handler
-      function handleSignup(email, password, name) {
-        auth.createUserWithEmailAndPassword(email, password)
-          .then(result => {
-            db.collection('users').doc(result.user.uid).set({
-              email, name: name || email.split('@')[0]
-            }).catch(err => console.error(err));
-          })
-          .catch(err => alert('Error: ' + err.message));
-      }
-
-      // Logout handler
-      function handleLogout() {
-        auth.signOut();
-      }
-
-      // Login Screen
-      function LoginScreen() {
-        const [email, setEmail] = React.useState('');
-        const [password, setPassword] = React.useState('');
-        const [name, setName] = React.useState('');
-        const [isSignup, setIsSignup] = React.useState(false);
-
-        return React.createElement('div', {
-          style: {
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '100vh',
-            background: 'oklch(96% 0.02 70)',
-            padding: '20px'
-          }
-        },
-          React.createElement('div', {
-            style: {
-              maxWidth: '400px',
-              width: '100%',
-              background: 'white',
-              borderRadius: '18px',
-              padding: '40px 32px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
-            }
-          },
-            React.createElement('div', { style: { textAlign: 'center', marginBottom: '32px' } },
-              React.createElement('div', {
-                style: {
-                  width: '50px',
-                  height: '50px',
-                  borderRadius: '12px',
-                  background: 'oklch(64% 0.15 45)',
-                  margin: '0 auto 16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  fontSize: '24px',
-                  fontWeight: 700
-                }
-              }, 'JY'),
-              React.createElement('h1', { style: { margin: 0, fontSize: '24px', marginBottom: '8px' } }, 'Family Hub'),
-              React.createElement('p', { style: { margin: 0, fontSize: '14px', color: 'oklch(55% 0.02 50)' } }, 
-                isSignup ? 'Create account' : 'Welcome back'
-              )
-            ),
-            React.createElement('form', {
-              onSubmit: (e) => {
-                e.preventDefault();
-                isSignup ? handleSignup(email, password, name) : handleLogin(email, password);
-              },
-              style: { display: 'flex', flexDirection: 'column', gap: '16px' }
-            },
-              React.createElement('input', {
-                type: 'email',
-                placeholder: 'Email',
-                value: email,
-                onChange: e => setEmail(e.target.value),
-                required: true,
-                style: {
-                  padding: '10px 12px',
-                  border: '1px solid oklch(88% 0.02 70)',
-                  borderRadius: '9px',
-                  fontSize: '14px'
-                }
-              }),
-              React.createElement('input', {
-                type: 'password',
-                placeholder: 'Password (6+ chars)',
-                value: password,
-                onChange: e => setPassword(e.target.value),
-                required: true,
-                minLength: 6,
-                style: {
-                  padding: '10px 12px',
-                  border: '1px solid oklch(88% 0.02 70)',
-                  borderRadius: '9px',
-                  fontSize: '14px'
-                }
-              }),
-              isSignup && React.createElement('input', {
-                type: 'text',
-                placeholder: 'Name (optional)',
-                value: name,
-                onChange: e => setName(e.target.value),
-                style: {
-                  padding: '10px 12px',
-                  border: '1px solid oklch(88% 0.02 70)',
-                  borderRadius: '9px',
-                  fontSize: '14px'
-                }
-              }),
-              React.createElement('button', {
-                type: 'submit',
-                style: {
-                  padding: '11px 16px',
-                  background: 'oklch(64% 0.15 45)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '9px',
-                  fontSize: '14px',
-                  fontWeight: 700,
-                  cursor: 'pointer'
-                }
-              }, isSignup ? 'Create Account' : 'Sign In')
-            ),
-            React.createElement('div', {
-              style: {
-                textAlign: 'center',
-                marginTop: '20px',
-                fontSize: '13px'
-              }
-            },
-              React.createElement('button', {
-                type: 'button',
-                onClick: () => setIsSignup(!isSignup),
-                style: {
-                  background: 'none',
-                  border: 'none',
-                  color: 'oklch(64% 0.15 45)',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  fontSize: '13px'
-                }
-              }, isSignup ? 'Already have account? Sign In' : 'Need account? Sign Up')
-            )
-          )
-        );
-      }
-
-      // Welcome Screen
-      function WelcomeScreen() {
-        return React.createElement('div', {
-          style: {
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '100vh',
-            background: 'oklch(96% 0.02 70)',
-            padding: '20px',
-            textAlign: 'center'
-          }
-        },
-          React.createElement('div', {
-            style: {
-              maxWidth: '500px',
-              background: 'white',
-              borderRadius: '18px',
-              padding: '40px 32px'
-            }
-          },
-            React.createElement('h1', { style: { fontSize: '32px', marginBottom: '16px' } }, '✅ Welcome!'),
-            React.createElement('p', { style: { fontSize: '16px', color: 'oklch(55% 0.02 50)', marginBottom: '24px' } }, 
-              'Logged in as: ' + (currentUser?.email || 'User')
-            ),
-            React.createElement('div', {
-              style: {
-                background: 'oklch(96% 0.02 70)',
-                padding: '20px',
-                borderRadius: '9px',
-                marginBottom: '24px',
-                textAlign: 'left'
-              }
-            },
-              React.createElement('h3', { style: { marginTop: 0 } }, 'Features:'),
-              React.createElement('ul', { style: { fontSize: '14px', lineHeight: '2' } },
-                React.createElement('li', null, '📅 Shared calendar'),
-                React.createElement('li', null, '💰 Budget tracking'),
-                React.createElement('li', null, '🔐 Password manager'),
-                React.createElement('li', null, '📱 Mobile app')
-              )
-            ),
-            React.createElement('button', {
-              onClick: handleLogout,
-              style: {
-                padding: '10px 20px',
-                background: 'oklch(92% 0.02 70)',
-                border: '1px solid oklch(88% 0.02 70)',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: 600
-              }
-            }, 'Sign Out')
-          )
-        );
-      }
-
-      // Render
       function render() {
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(currentUser ? React.createElement(WelcomeScreen) : React.createElement(LoginScreen));
+        const root = document.getElementById('root');
+        
+        if (!currentUser) {
+          root.innerHTML = `
+            <div class="container">
+              <div class="card">
+                <div class="logo">JY</div>
+                <h1>Family Hub</h1>
+                <p class="subtitle" id="subtitle">Welcome back</p>
+                <div id="error" class="error" style="display:none;"></div>
+                
+                <input type="email" id="email" placeholder="Email" />
+                <input type="password" id="password" placeholder="Password (6+ chars)" />
+                <input type="text" id="name" placeholder="Name (optional)" style="display:none;" />
+                
+                <button id="submitBtn">Sign In</button>
+                
+                <div class="toggle">
+                  <button id="toggleBtn">Need account? Sign Up</button>
+                </div>
+              </div>
+            </div>
+          `;
+
+          let isSignup = false;
+          const emailInput = document.getElementById('email');
+          const passwordInput = document.getElementById('password');
+          const nameInput = document.getElementById('name');
+          const submitBtn = document.getElementById('submitBtn');
+          const toggleBtn = document.getElementById('toggleBtn');
+          const subtitle = document.getElementById('subtitle');
+          const errorDiv = document.getElementById('error');
+
+          toggleBtn.onclick = () => {
+            isSignup = !isSignup;
+            nameInput.style.display = isSignup ? 'block' : 'none';
+            submitBtn.textContent = isSignup ? 'Create Account' : 'Sign In';
+            toggleBtn.textContent = isSignup ? 'Already have account? Sign In' : 'Need account? Sign Up';
+            subtitle.textContent = isSignup ? 'Create account' : 'Welcome back';
+            errorDiv.style.display = 'none';
+          };
+
+          submitBtn.onclick = async () => {
+            const email = emailInput.value.trim();
+            const password = passwordInput.value.trim();
+            const name = nameInput.value.trim();
+
+            if (!email || !password || (isSignup && password.length < 6)) {
+              errorDiv.textContent = 'Please fill all fields (password 6+ chars)';
+              errorDiv.style.display = 'block';
+              return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Loading...';
+
+            try {
+              if (isSignup) {
+                const result = await auth.createUserWithEmailAndPassword(email, password);
+                await db.collection('users').doc(result.user.uid).set({
+                  uid: result.user.uid,
+                  email: email,
+                  name: name || email.split('@')[0]
+                });
+              } else {
+                await auth.signInWithEmailAndPassword(email, password);
+              }
+            } catch (error) {
+              errorDiv.textContent = error.message;
+              errorDiv.style.display = 'block';
+              submitBtn.disabled = false;
+              submitBtn.textContent = isSignup ? 'Create Account' : 'Sign In';
+            }
+          };
+        } else {
+          root.innerHTML = `
+            <div class="container">
+              <div class="card welcome">
+                <div class="logo">✓</div>
+                <h2>Welcome!</h2>
+                <p>Logged in as:<br/><strong>${currentUser.email}</strong></p>
+                <div style="background: #f5f0ea; padding: 16px; border-radius: 6px; margin-bottom: 20px; text-align: left; font-size: 13px; line-height: 1.8;">
+                  <strong>Your Family Hub includes:</strong><br/>
+                  ✓ Shared calendar<br/>
+                  ✓ Budget tracking<br/>
+                  ✓ Account manager<br/>
+                  ✓ Mobile app support
+                </div>
+                <button id="signoutBtn">Sign Out</button>
+              </div>
+            </div>
+          `;
+
+          document.getElementById('signoutBtn').onclick = () => auth.signOut();
+        }
       }
 
       render();
-    });
+    } catch (error) {
+      console.error('Firebase init error:', error);
+      document.getElementById('root').innerHTML = `
+        <div class="container">
+          <div class="card" style="text-align: center;">
+            <h2>Error</h2>
+            <p style="color: red;">${error.message}</p>
+            <p>Please try refreshing the page</p>
+          </div>
+        </div>
+      `;
+    }
   </script>
 </body>
 </html>
