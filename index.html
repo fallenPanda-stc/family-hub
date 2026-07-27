@@ -59,16 +59,12 @@ firebase.initializeApp({
   /* ---------- phone layout ---------- */
   @media (max-width:820px){
     .app-shell{flex-direction:column!important}
-
-    /* top strip: brand on the left, sign out on the right */
     .app-nav{width:auto!important;flex-direction:row!important;align-items:center!important;
              justify-content:space-between!important;gap:10px!important;
              padding:10px 14px!important;border-right:none!important;
              border-bottom:1px solid oklch(90% 0.02 70)!important;
              position:sticky!important;top:0;z-index:30}
     .nav-brand{padding:0!important}
-
-    /* the four tabs pinned to the bottom, thumb height */
     .nav-tabs{position:fixed!important;left:0;right:0;bottom:0;z-index:40;
               flex-direction:row!important;justify-content:space-around!important;gap:0!important;
               background:oklch(99% 0.008 70);border-top:1px solid oklch(90% 0.02 70);
@@ -76,17 +72,12 @@ firebase.initializeApp({
     .nav-tabs > div{flex:1 1 0!important;justify-content:center!important;
                     padding:10px 2px!important;font-size:12.5px!important;
                     border-radius:10px!important;margin:0 3px!important}
-
     .nav-foot{margin-top:0!important;border-top:none!important;padding:0!important;
               font-size:11.5px!important;text-align:right;flex:none}
     .nav-foot > div:nth-child(1),
     .nav-foot > div:nth-child(2){display:none!important}
     .nav-foot > div:nth-child(3){margin-top:0!important}
-
-    /* room for the tab bar so nothing hides underneath it */
     .app-main{padding:18px 13px 92px!important}
-
-    /* stacks */
     .dash-grid{grid-template-columns:1fr!important;gap:14px!important}
     .cal-split{grid-template-columns:1fr!important;gap:16px!important}
     .bud-split{grid-template-columns:1fr!important;gap:16px!important}
@@ -178,10 +169,27 @@ firebase.initializeApp({
               <div style="{{ overallBudgetBarStyle }}"></div>
               <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:11.5px;font-weight:700;">
                 <span style="color:oklch(35% 0.02 50);">${{ totalSpentStr }} spent</span>
-                <span style="color:oklch(45% 0.02 50);">${{ remainingStr }} left</span>
+                <span style="color:{{ remainingColor }};">${{ remainingStr }} {{ remainingLabel }}</span>
               </div>
             </div>
             <div onClick="{{ goBudget }}" style="font-size:12.5px;font-weight:700;color:oklch(60% 0.12 145);cursor:pointer;">View full budget →</div>
+            <div style="border-top:1px solid oklch(93% 0.015 70);margin-top:6px;padding-top:14px;">
+              <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:14px;margin-bottom:4px;">This month, day {{ thisMonth.daysElapsed }} of {{ thisMonth.daysInMonth }}</div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin:12px 0;">
+                <div>
+                  <div style="font-size:11px;color:oklch(50% 0.02 50);">Projected expenses</div>
+                  <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:17px;">{{ thisMonth.projectedTotalStr }}</div>
+                </div>
+              </div>
+              <div style="height:12px;border-radius:7px;background:oklch(92% 0.02 70);overflow:hidden;">
+                <div style="{{ thisMonth.paceBarStyle }}"></div>
+              </div>
+              <div style="margin-top:12px;display:flex;flex-direction:column;gap:5px;">
+                <sc-for list="{{ thisMonth.insights }}" as="line" hint-placeholder-count="1">
+                  <div style="font-size:12.5px;color:oklch(42% 0.02 50);">{{ line }}</div>
+                </sc-for>
+              </div>
+            </div>
           </div>
 
           <div style="background:oklch(99% 0.008 70);border:1px solid oklch(90% 0.02 70);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:14px;">
@@ -331,7 +339,7 @@ firebase.initializeApp({
             <div style="{{ incomeVsSpentBarStyle }}"></div>
             <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:11.5px;font-weight:700;">
               <span style="color:oklch(35% 0.02 50);">${{ totalSpentStr }} spent</span>
-              <span style="color:oklch(45% 0.02 50);">${{ remainingStr }} left</span>
+              <span style="color:{{ remainingColor }};">${{ remainingStr }} {{ remainingLabel }}</span>
             </div>
           </div>
         </div>
@@ -340,10 +348,14 @@ firebase.initializeApp({
           <div style="background:oklch(99% 0.008 70);border:1px solid oklch(90% 0.02 70);border-radius:18px;padding:22px;">
             <sc-for list="{{ categoryGroupRows }}" as="grp" hint-placeholder-count="2">
               <div style="margin-bottom:16px;background:oklch(97.5% 0.01 70);border:1px solid oklch(92% 0.015 70);border-radius:14px;padding:16px;">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                  <div style="font-size:12.5px;font-weight:700;letter-spacing:0.02em;color:oklch(64% 0.09 55);background:oklch(96% 0.025 60);display:inline-block;padding:4px 10px;border-radius:7px;cursor:pointer;" onClick="{{ grp.onOpenDetail }}">{{ grp.group }}</div>
-                  <div style="font-size:13px;font-weight:700;color:oklch(50% 0.02 50);">${{ grp.totalStr }}</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;cursor:pointer;" onClick="{{ grp.onToggleCollapse }}">
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <span style="{{ grp.chevronStyle }}">▾</span>
+                    <div style="font-size:12.5px;font-weight:700;letter-spacing:0.02em;color:oklch(64% 0.09 55);background:oklch(96% 0.025 60);display:inline-block;padding:4px 10px;border-radius:7px;">{{ grp.group }}</div>
+                  </div>
+                  <div onClick="{{ grp.onOpenDetail }}" style="font-size:13px;font-weight:700;color:oklch(50% 0.02 50);cursor:pointer;">${{ grp.totalStr }}</div>
                 </div>
+                <sc-if value="{{ grp.expanded }}" hint-placeholder-val="{{ true }}">
                 <sc-for list="{{ grp.items }}" as="cat" hint-placeholder-count="3">
                   <div style="padding:12px 0;border-top:1px solid oklch(93% 0.015 70);cursor:pointer;" onClick="{{ cat.onOpenDetail }}">
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
@@ -360,12 +372,21 @@ firebase.initializeApp({
                 <sc-if value="{{ grp.empty }}" hint-placeholder-val="{{ false }}">
                   <div style="font-size:13px;color:oklch(55% 0.02 50);padding:6px 0;">No categories yet.</div>
                 </sc-if>
+                </sc-if>
               </div>
             </sc-for>
           </div>
 
           <div style="background:oklch(99% 0.008 70);border:1px solid oklch(90% 0.02 70);border-radius:18px;padding:22px;">
-            <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:16px;margin-bottom:14px;">Recent Transactions</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+              <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:16px;">Transactions This Month</div>
+              <select value="{{ txSort }}" onChange="{{ onTxSortChange }}" aria-label="Sort transactions" style="{{ monthSelectStyle }}">
+                <option value="date_desc">Date ↓ Newest</option>
+                <option value="date_asc">Date ↑ Oldest</option>
+                <option value="amount_desc">Amount ↓ High-Low</option>
+                <option value="amount_asc">Amount ↑ Low-High</option>
+              </select>
+            </div>
             <sc-for list="{{ transactionRows }}" as="tx" hint-placeholder-count="6">
               <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid oklch(93% 0.015 70);">
                 <span style="{{ tx.dotStyle }}"></span>
@@ -380,11 +401,21 @@ firebase.initializeApp({
                 <div onClick="{{ tx.onDelete }}" style="{{ deleteXStyle }}">✕</div>
               </div>
             </sc-for>
+            <sc-if value="{{ txPager.show }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;justify-content:center;gap:6px;margin-top:14px;flex-wrap:wrap;">
+                <sc-for list="{{ txPager.pages }}" as="pg" hint-placeholder-count="3">
+                  <div onClick="{{ pg.onClick }}" style="{{ pg.style }}">{{ pg.label }}</div>
+                </sc-for>
+              </div>
+            </sc-if>
           </div>
         </div>
 
         <div style="background:oklch(99% 0.008 70);border:1px solid oklch(90% 0.02 70);border-radius:18px;padding:22px;margin-top:24px;">
-          <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:16px;margin-bottom:14px;">Monthly Category Summary</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:16px;">Monthly Category Summary</div>
+            <button onClick="{{ onToggleAllCatChart }}" style="{{ secondaryBtnStyle }}">{{ catChartAllLabel }}</button>
+          </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
             <sc-for list="{{ catChartLegend }}" as="lg" hint-placeholder-count="6">
               <div onClick="{{ lg.onToggle }}" style="{{ lg.chipStyle }}">
@@ -488,7 +519,7 @@ firebase.initializeApp({
             <option value="expense">Expense</option>
             <option value="income">Income</option>
           </select></label>
-          <label style="{{ fieldLabelStyle }}">Category<select style="{{ fieldInputStyle }}" value="{{ form.category }}" onChange="{{ onFormChange_category }}">
+          <label style="{{ fieldLabelStyle }}">Category<sc-if value="{{ isIncomeForm }}" hint-placeholder-val="{{ false }}"><input style="{{ fieldInputStyle }}" value="N/A for income" disabled="{{ true }}"></input></sc-if><sc-if value="{{ isExpenseForm }}" hint-placeholder-val="{{ true }}"><select style="{{ fieldInputStyle }}" value="{{ form.category }}" onChange="{{ onFormChange_category }}">
             <sc-for list="{{ categoryGroups }}" as="g" hint-placeholder-count="2">
               <optgroup label="{{ g.group }}">
                 <sc-for list="{{ g.items }}" as="c" hint-placeholder-count="2">
@@ -496,10 +527,10 @@ firebase.initializeApp({
                 </sc-for>
               </optgroup>
             </sc-for>
-          </select></label>
+          </select></sc-if></label>
           <label style="{{ fieldLabelStyle }}">Description<input style="{{ fieldInputStyle }}" value="{{ form.desc }}" onChange="{{ onFormChange_desc }}" placeholder="Trader Joe's"></label>
           <label style="{{ fieldLabelStyle }}">Amount<input type="number" style="{{ fieldInputStyle }}" value="{{ form.amount }}" onChange="{{ onFormChange_amount }}" placeholder="45.20"></label>
-          <label style="{{ fieldLabelStyle }}">Frequency<select style="{{ fieldInputStyle }}" value="{{ form.frequency }}" onChange="{{ onFormChange_frequency }}">
+          <label style="{{ fieldLabelStyle }}">Frequency<sc-if value="{{ isFrequencyLocked }}" hint-placeholder-val="{{ false }}"><input style="{{ fieldInputStyle }}" value="One-time" disabled="{{ true }}"></input></sc-if><sc-if value="{{ isFrequencyUnlocked }}" hint-placeholder-val="{{ true }}"><select style="{{ fieldInputStyle }}" value="{{ form.frequency }}" onChange="{{ onFormChange_frequency }}">
             <option value="once">One-time</option>
             <option value="weekly">Weekly</option>
             <option value="biweekly">Bi-weekly</option>
@@ -507,7 +538,7 @@ firebase.initializeApp({
             <option value="bimonthly">Bi-monthly</option>
             <option value="annually">Annually</option>
             <option value="biannually">Bi-annually</option>
-          </select></label>
+          </select></sc-if></label>
           <label style="{{ fieldLabelStyle }}">Date<input type="date" style="{{ fieldInputStyle }}" value="{{ form.date }}" onChange="{{ onFormChange_date }}"></label>
           <label style="{{ fieldLabelStyle }}">Note<input style="{{ fieldInputStyle }}" value="{{ form.note }}" onChange="{{ onFormChange_note }}" placeholder="Optional note"></label>
         </div>
@@ -613,7 +644,7 @@ const WEEKDAYS = ['S','M','T','W','T','F','S'];
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const CAT_COLORS = ['oklch(64% 0.12 45)','oklch(64% 0.12 90)','oklch(60% 0.12 145)','oklch(58% 0.10 200)','oklch(58% 0.10 260)','oklch(60% 0.12 320)'];
 
-/* --- real current date, so the app stays correct forever --- */
+/* --- real current date, so the app never goes stale --- */
 const _N = new Date();
 const P2 = n => (n < 10 ? '0' + n : '' + n);
 const TODAY = _N.getFullYear() + '-' + P2(_N.getMonth() + 1) + '-' + P2(_N.getDate());
@@ -627,6 +658,7 @@ class Component extends DCLogic {
   state = {
     view: 'dashboard',
     chartHiddenCats: {},
+    collapsedGroups: {'Bills & Subscriptions': true, 'Expenses': true},
     calYear: TODAY_Y, calMonth: TODAY_M,
     budgetYear: TODAY_Y, budgetMonth: TODAY_M,
     userEmail: '',
@@ -650,9 +682,8 @@ class Component extends DCLogic {
   genId(){ const id = this.state.nextId; this.setState(s=>({nextId:s.nextId+1})); return 'x'+id; }
 
   /* ================= FIREBASE SYNC =================
-     The whole household lives in one Firestore document, so every field
-     of the original design keeps working exactly as it did locally.
-     Any change either of us makes shows up on the other's screen. */
+     The household lives in one Firestore document, so every part of the
+     design keeps working exactly as it did locally. */
   static get SYNC_KEYS(){ return ['events','categories','transactions','accounts','nextId']; }
 
   componentDidMount(){
@@ -666,7 +697,6 @@ class Component extends DCLogic {
     const snap = (st) => JSON.stringify(KEYS.reduce((o,k)=>{ o[k] = st[k]; return o; }, {}));
     this.__snap = snap;
 
-    /* every state change runs through here; data changes get pushed up */
     this.setState = (updater, cb) => raw(updater, () => { this.__push(); if (cb) cb(); });
 
     this.__push = () => {
@@ -676,7 +706,7 @@ class Component extends DCLogic {
       this.__lastSaved = cur;
       clearTimeout(this.__timer);
       this.__timer = setTimeout(() => {
-        const payload = JSON.parse(cur);
+        const payload = JSON.parse(cur);   // also strips undefined fields for Firestore
         payload.updatedAt = new Date().toISOString();
         payload.updatedBy = (firebase.auth().currentUser || {}).email || '';
         this.__doc.set(payload).catch(e => console.error('Save failed:', e));
@@ -684,10 +714,8 @@ class Component extends DCLogic {
     };
 
     firebase.auth().onAuthStateChanged((user) => {
-      if (user) {
-        raw({ userEmail: user.email });
-        this.__connect();
-      } else {
+      if (user) { raw({ userEmail: user.email }); this.__connect(); }
+      else {
         this.__disconnect();
         raw({ userEmail:'', events:[], transactions:[], accounts:[], modal:null, form:{} });
       }
@@ -698,13 +726,7 @@ class Component extends DCLogic {
     if (this.__unsub) return;
     this.__doc = firebase.firestore().collection('households').doc('main');
     this.__unsub = this.__doc.onSnapshot((d) => {
-      if (!d.exists) {
-        /* first ever run: seed the document from the starting state */
-        this.__ready = true;
-        this.__lastSaved = null;
-        this.__push();
-        return;
-      }
+      if (!d.exists) { this.__ready = true; this.__lastSaved = null; this.__push(); return; }
       const data = d.data() || {};
       const incoming = {};
       Component.SYNC_KEYS.forEach(k => { if (data[k] !== undefined) incoming[k] = data[k]; });
@@ -719,15 +741,23 @@ class Component extends DCLogic {
 
   __disconnect(){
     if (this.__unsub) { this.__unsub(); this.__unsub = null; }
-    this.__doc = null;
-    this.__ready = false;
-    this.__lastSaved = null;
+    this.__doc = null; this.__ready = false; this.__lastSaved = null;
     clearTimeout(this.__timer);
   }
 
   componentWillUnmount(){ this.__disconnect(); }
 
   signOut = () => { firebase.auth().signOut(); };
+
+  /* amount in effect for a given month index (y*12+m) */
+  amountForMonth(t, target){
+    if (!t) return 0;
+    if (Array.isArray(t.amounts) && t.amounts.length){
+      const applicable = t.amounts.filter(a => a.from <= target);
+      if (applicable.length) return applicable.reduce((best,a)=> a.from > best.from ? a : best).amount;
+    }
+    return t.amount;
+  }
 
   goDashboard = () => this.setState({view:'dashboard'});
   goCalendar = () => this.setState({view:'calendar'});
@@ -753,16 +783,16 @@ class Component extends DCLogic {
   prevBudgetMonth = () => this.setState(s => {
     let m = s.budgetMonth - 1, y = s.budgetYear;
     if (m < 0) { m = 11; y -= 1; }
-    return {budgetMonth:m, budgetYear:y};
+    return {budgetMonth:m, budgetYear:y, txPage:0};
   });
   nextBudgetMonth = () => this.setState(s => {
     let m = s.budgetMonth + 1, y = s.budgetYear;
     if (m > 11) { m = 0; y += 1; }
-    return {budgetMonth:m, budgetYear:y};
+    return {budgetMonth:m, budgetYear:y, txPage:0};
   });
-  goBudgetToday = () => this.setState({budgetMonth:TODAY_M, budgetYear:TODAY_Y});
-  onBudgetMonthSelect = (e) => this.setState({budgetMonth: parseInt(e.target.value,10)});
-  onBudgetYearSelect = (e) => this.setState({budgetYear: parseInt(e.target.value,10)});
+  goBudgetToday = () => this.setState({budgetMonth:TODAY_M, budgetYear:TODAY_Y, txPage:0});
+  onBudgetMonthSelect = (e) => this.setState({budgetMonth: parseInt(e.target.value,10), txPage:0});
+  onBudgetYearSelect = (e) => this.setState({budgetYear: parseInt(e.target.value,10), txPage:0});
   toggleBudgetNav = () => this.setState(s=>({budgetNavOpen: !s.budgetNavOpen}));
   closeBudgetNav = () => this.setState({budgetNavOpen:false});
 
@@ -782,14 +812,53 @@ class Component extends DCLogic {
   goCalToday = () => this.setState({calMonth:TODAY_M, calYear:TODAY_Y});
 
   editEvent(ev){ this.setState({modal:{type:'event',editing:ev.id}, form:{...ev}}); }
-  editTransaction(tx){ this.setState({modal:{type:'transaction',editing:tx.id}, form:{...tx}}); }
+  baseAmountForTarget(t, target){
+    if (Array.isArray(t.amounts) && t.amounts.length) {
+      const applicable = t.amounts.filter(a => a.from <= target);
+      if (applicable.length) return applicable.reduce((best,a)=> a.from > best.from ? a : best).amount;
+    }
+    return t.amount;
+  }
+  txStartMonth(t){
+    const d = new Date(t.date+'T00:00:00');
+    return d.getFullYear()*12 + d.getMonth();
+  }
+  freqEntryForTarget(t, target){
+    if (Array.isArray(t.frequencies) && t.frequencies.length) {
+      const applicable = t.frequencies.filter(f => f.from <= target);
+      if (applicable.length) return applicable.reduce((best,f)=> f.from > best.from ? f : best);
+    }
+    return {from: this.txStartMonth(t), frequency: t.frequency};
+  }
+  editTransaction(tx){
+    const target = this.state.budgetYear*12 + this.state.budgetMonth;
+    const resolvedAmount = this.baseAmountForTarget(tx, target);
+    const resolvedFrequency = this.freqEntryForTarget(tx, target).frequency;
+    this.setState({modal:{type:'transaction',editing:tx.id}, form:{...tx, amount:resolvedAmount, frequency:resolvedFrequency}});
+  }
   editCategory(cat){ this.setState({modal:{type:'category',editing:cat.id}, form:{...cat}}); }
   editAccount(acc){ this.setState({modal:{type:'account',editing:acc.id}, form:{...acc}}); }
 
   deleteEvent(id){ this.setState(s=>({events:s.events.filter(e=>e.id!==id)})); }
   confirmDeleteEvent(id){ if (window.confirm('Delete this event?')) this.deleteEvent(id); }
   deleteTransaction(id){ this.setState(s=>({transactions:s.transactions.filter(t=>t.id!==id)})); }
-  confirmDeleteTransaction(id){ if (window.confirm('Delete this transaction?')) this.deleteTransaction(id); }
+  confirmDeleteTransaction(id, closeModalAfter){
+    const tx = this.state.transactions.find(t=>t.id===id);
+    const target = this.state.budgetYear*12 + this.state.budgetMonth;
+    const resolvedFreq = tx ? this.freqEntryForTarget(tx, target).frequency : null;
+    const isRecurring = tx && resolvedFreq && resolvedFreq !== 'once';
+    if (isRecurring) {
+      const start = this.txStartMonth(tx);
+      if (target > start) {
+        if (!window.confirm(`This is a recurring transaction. Stop it starting this month and keep past occurrences?`)) return;
+        this.setState(s=>({transactions: s.transactions.map(t=>t.id===id?{...t, endsAt:target}:t), ...(closeModalAfter?{modal:null, form:{}}:{})}));
+        return;
+      }
+    }
+    if (!window.confirm('Delete this transaction?')) return;
+    this.deleteTransaction(id);
+    if (closeModalAfter) this.setState({modal:null, form:{}});
+  }
   deleteAccount(id){ this.setState(s=>({accounts:s.accounts.filter(a=>a.id!==id)})); }
 
   setFormField(field, value){ this.setState(s=>({form:{...s.form, [field]:value}})); }
@@ -801,7 +870,26 @@ class Component extends DCLogic {
       const entry = {id: editing || this.genId(), title:f.title||'Untitled', date:f.date||TODAY, endDate:f.endDate||f.date||TODAY, time:f.time||'', endTime:f.endTime||'', person:f.person||'Both', location:f.location||'', note:f.note||''};
       this.setState(s => ({events: editing ? s.events.map(e=>e.id===editing?entry:e) : [...s.events, entry]}));
     } else if (type === 'transaction') {
-      const entry = {id: editing || this.genId(), desc:f.desc||'Untitled', category:f.category||'', amount:parseFloat(f.amount)||0, type:f.type||'expense', frequency:f.frequency||'once', date:f.date||TODAY, note:f.note||''};
+      const existingTx = editing ? this.state.transactions.find(t=>t.id===editing) : null;
+      const newAmount = parseFloat(f.amount)||0;
+      let amounts = existingTx?.amounts;
+      const target = this.state.budgetYear*12 + this.state.budgetMonth;
+      const prevResolvedAmount = existingTx ? this.baseAmountForTarget(existingTx, target) : null;
+      if (existingTx && prevResolvedAmount !== newAmount) {
+        amounts = [...(existingTx.amounts||[{from: (new Date(existingTx.date+'T00:00:00')).getFullYear()*12+(new Date(existingTx.date+'T00:00:00')).getMonth(), amount:existingTx.amount}])];
+        if (amounts.some(a=>a.from===target)) amounts = amounts.map(a=> a.from===target ? {...a, amount:newAmount} : a);
+        else amounts.push({from: target, amount: newAmount});
+      }
+      const newFrequency = f.frequency||'once';
+      let frequencies = existingTx?.frequencies;
+      const prevResolvedFreq = existingTx ? this.freqEntryForTarget(existingTx, target).frequency : null;
+      if (existingTx && prevResolvedFreq !== newFrequency) {
+        frequencies = [...(existingTx.frequencies||[{from: this.txStartMonth(existingTx), frequency:existingTx.frequency||'once'}])];
+        if (frequencies.some(fr=>fr.from===target)) frequencies = frequencies.map(fr=> fr.from===target ? {...fr, frequency:newFrequency} : fr);
+        else frequencies.push({from: target, frequency: newFrequency});
+        frequencies.sort((a,b)=>a.from-b.from);
+      }
+      const entry = {id: editing || this.genId(), desc:f.desc||'Untitled', category:f.type==='income'?'':(f.category||''), amount:newAmount, type:f.type||'expense', frequency:newFrequency, date:f.date||TODAY, note:f.note||'', endsAt: existingTx?.endsAt, amounts, frequencies};
       this.setState(s => ({transactions: editing ? s.transactions.map(t=>t.id===editing?entry:t) : [...s.transactions, entry]}));
     } else if (type === 'category') {
       const entry = {id: editing || this.genId(), name:f.name||'Untitled', group:f.group||'Expenses'};
@@ -823,7 +911,7 @@ class Component extends DCLogic {
     const {type, editing} = this.state.modal;
     if (!editing) return;
     if (type === 'event') this.deleteEvent(editing);
-    else if (type === 'transaction') this.deleteTransaction(editing);
+    else if (type === 'transaction') return this.confirmDeleteTransaction(editing, true);
     else if (type === 'category') return this.deleteCategory(editing);
     else if (type === 'account') this.deleteAccount(editing);
     this.setState({modal:null, form:{}});
@@ -844,6 +932,14 @@ class Component extends DCLogic {
   }
 
   toggleChartCat = (id) => this.setState(s => ({chartHiddenCats: {...s.chartHiddenCats, [id]: !s.chartHiddenCats[id]}}));
+  onTxSortChange = (e) => this.setState({txSort: e.target.value, txPage:0});
+  toggleGroupCollapse = (group) => this.setState(s => ({collapsedGroups: {...s.collapsedGroups, [group]: !s.collapsedGroups[group]}}));
+  onToggleAllCatChart = () => {
+    const allHidden = this.state.categories.every(c => this.state.chartHiddenCats[c.id]);
+    const next = {};
+    this.state.categories.forEach(c => { next[c.id] = !allHidden; });
+    this.setState({chartHiddenCats: allHidden ? {} : next});
+  };
 
   toggleReveal(id){ this.setState(s=>({revealed:{...s.revealed, [id]:!s.revealed[id]}})); }
 
@@ -965,20 +1061,120 @@ class Component extends DCLogic {
     const upcomingFull = upcoming.slice(0,8).map(mkEv);
 
     // budget calcs
-    const FREQ_MONTHLY_MULT = {weekly:4.33, biweekly:2.166, monthly:1, bimonthly:0.5, annually:1/12, biannually:1/6, once:1};
-    const monthlyAmt = (t) => t.amount * (FREQ_MONTHLY_MULT[t.frequency] ?? 1);
+    const FREQ_CHARGE_MULT = {weekly:4.33, biweekly:2.166, monthly:1, bimonthly:1, biannually:1, annually:1, once:1};
+    const monthlyAmt = (t, target) => {
+      const freq = this.freqEntryForTarget(t, target).frequency;
+      return this.baseAmountForTarget(t, target) * (FREQ_CHARGE_MULT[freq] ?? 1);
+    };
     const bYear = s.budgetYear, bMonth = s.budgetMonth;
     const appliesToMonth = (t, year, month) => {
-      const d = new Date(t.date+'T00:00:00');
-      const start = d.getFullYear()*12 + d.getMonth();
+      const start = this.txStartMonth(t);
       const target = year*12 + month;
       if (target < start) return false;
-      if (t.frequency === 'annually') return d.getMonth() === month;
-      if (t.frequency === 'biannually') return ((month - d.getMonth() + 12) % 6) === 0;
-      if (t.frequency === 'bimonthly') return ((month - d.getMonth() + 12) % 2) === 0;
-      return true; // once/weekly/biweekly/monthly all considered active from their start date on
+      const freqEntry = this.freqEntryForTarget(t, target);
+      const freq = freqEntry.frequency;
+      if (!freq || freq === 'once') return target === freqEntry.from;
+      if (t.endsAt != null && target >= t.endsAt) return false;
+      const anchorMonth = ((freqEntry.from % 12) + 12) % 12;
+      if (freq === 'annually') return month === anchorMonth;
+      if (freq === 'biannually') return ((month - anchorMonth + 12) % 6) === 0;
+      if (freq === 'bimonthly') return ((month - anchorMonth + 12) % 2) === 0;
+      return true; // weekly/biweekly/monthly all considered active from their effective date on
     };
-    const monthContribution = (t, year, month) => appliesToMonth(t, year, month) ? monthlyAmt(t) : 0;
+    const monthContribution = (t, year, month) => appliesToMonth(t, year, month) ? monthlyAmt(t, year*12+month) : 0;
+
+    // "This Month" dashboard summary — always the real current month, independent of the Budget tab selector
+    const today = TODAY;
+    const curYear = 2026, curMonth = 6;
+    const curIndex = curYear*12 + curMonth;
+    const daysElapsed = Math.max(1, parseInt(today.slice(8,10),10));
+    const daysInMonth = new Date(curYear, curMonth+1, 0).getDate();
+    const isDiscretionary = (t) => t.type==='expense' && (s.categories.find(c=>c.name===t.category)?.group === 'Expenses');
+    const dateIndex = (dateStr) => { const d = new Date(dateStr+'T00:00:00'); return d.getFullYear()*12+d.getMonth(); };
+    const thisMonthVariableTx = s.transactions.filter(t => isDiscretionary(t) && dateIndex(t.date) === curIndex);
+    let variableToDate = 0, variableFull = 0;
+    for (const t of thisMonthVariableTx) {
+      const amt = this.baseAmountForTarget(t, curIndex);
+      variableFull += amt;
+      if (t.date <= today) variableToDate += amt;
+    }
+    let income = 0;
+    for (const t of s.transactions) if (t.type==='income' && appliesToMonth(t, curYear, curMonth)) income += monthlyAmt(t, curIndex);
+    let fixedCosts = 0;
+    for (const t of s.transactions) if (t.type==='expense' && !isDiscretionary(t) && this.freqEntryForTarget(t, curIndex).frequency !== 'once' && appliesToMonth(t, curYear, curMonth)) fixedCosts += monthlyAmt(t, curIndex);
+    const availableAfterBills = income - fixedCosts;
+
+    // baseline: 3 most recent complete months with >=1 Expenses-group transaction dated in that month
+    const variableFullForMonth = (year, month) => {
+      const idx = year*12+month;
+      let sum = 0;
+      for (const t of s.transactions) if (isDiscretionary(t) && dateIndex(t.date) === idx) sum += this.baseAmountForTarget(t, idx);
+      return sum;
+    };
+    const baselineMonths = [];
+    for (let k=1; k<=24 && baselineMonths.length<3; k++){
+      const idx = curIndex - k;
+      const y = Math.floor(idx/12), m = ((idx%12)+12)%12;
+      const hasExpense = s.transactions.some(t => isDiscretionary(t) && dateIndex(t.date) === idx);
+      if (hasExpense) baselineMonths.push({y, m, variableFull: variableFullForMonth(y, m)});
+    }
+    const hasBaseline = baselineMonths.length >= 2;
+    const baselineVariable = hasBaseline ? baselineMonths.reduce((sum,b)=>sum+b.variableFull,0)/baselineMonths.length : null;
+    const expectedByNow = hasBaseline ? baselineVariable * (daysElapsed/daysInMonth) : 0;
+    const pace = (hasBaseline && expectedByNow>0) ? variableToDate/expectedByNow : null;
+    const projectedVariable = hasBaseline ? (variableToDate/daysElapsed)*daysInMonth : null;
+    const projectedTotal = hasBaseline ? projectedVariable : null;
+
+    const insightLines = [];
+    if (!hasBaseline) {
+      insightLines.push('Still building history. Comparisons will appear once there are a few months of spending to compare against.');
+    } else {
+      if (daysElapsed <= 5) insightLines.push('It is early in the month, so the projection will move around a lot.');
+      const midLines = [];
+      if (pace != null) {
+        const pct = Math.round(Math.abs(pace-1)*100);
+        if (pace >= 1.15) midLines.push(`Variable spending is running ${pct}% above your recent average for this point in the month.`);
+        else if (pace <= 0.85) {
+          const projectedSave = Math.round(baselineVariable - (projectedVariable ?? 0));
+          midLines.push(`Variable spending is running ${pct}% below your recent average, on track to save about $${Math.max(0,projectedSave)} this month.`);
+        }
+      }
+      // per-category check (Expenses group only)
+      const expenseCatNames = s.categories.filter(c=>c.group==='Expenses').map(c=>c.name);
+      let worstCat = null, worstDiff = 0;
+      for (const catName of expenseCatNames) {
+        let catBaselineSum = 0;
+        for (const b of baselineMonths) {
+          for (const t of s.transactions) if (isDiscretionary(t) && t.category===catName && dateIndex(t.date) === b.y*12+b.m) catBaselineSum += this.baseAmountForTarget(t, b.y*12+b.m);
+        }
+        const catBaselineAvg = catBaselineSum / baselineMonths.length;
+        const catExpected = catBaselineAvg * (daysElapsed/daysInMonth);
+        let catToDate = 0;
+        for (const t of thisMonthVariableTx) if (t.category===catName && t.date<=today) catToDate += this.baseAmountForTarget(t, curIndex);
+        const diff = catToDate - catExpected;
+        if (diff > worstDiff) { worstDiff = diff; worstCat = catName; }
+      }
+      if (worstCat && worstDiff >= 20) midLines.push(`${worstCat} is $${Math.round(worstDiff)} above where it usually sits by day ${daysElapsed}.`);
+      if (projectedTotal != null && income > 0 && projectedTotal > availableAfterBills) midLines.push(`On pace to spend $${Math.round(projectedTotal-availableAfterBills)} more than what is left after bills this month.`);
+      if (midLines.length === 0) {
+        let topCat = null, topAmt = -1;
+        const byCat = {};
+        for (const t of thisMonthVariableTx) if (t.date<=today) byCat[t.category] = (byCat[t.category]||0) + this.baseAmountForTarget(t, curIndex);
+        for (const [cn,amt] of Object.entries(byCat)) if (amt > topAmt) { topAmt = amt; topCat = cn; }
+        midLines.push(topCat ? `Spending is tracking close to normal. ${topCat} is the largest variable cost so far at $${Math.round(topAmt)}.` : 'Spending is tracking close to normal.');
+      }
+      insightLines.push(...midLines);
+    }
+    const spentSoFar = variableToDate;
+    const paceRatio = (hasBaseline && expectedByNow>0) ? Math.min(1, variableToDate/expectedByNow) : (hasBaseline ? (variableToDate>0?1:0) : 0);
+    const paceOver = hasBaseline && expectedByNow>0 && variableToDate > expectedByNow;
+    const thisMonth = {
+      daysElapsed, daysInMonth,
+      spentSoFarStr: this.fmtMoney(spentSoFar),
+      projectedTotalStr: hasBaseline ? '$'+this.fmtMoney(projectedTotal) : '—',
+      paceBarStyle: `height:100%;width:${Math.round(paceRatio*100)}%;background:${paceOver?'oklch(60% 0.15 25)':'oklch(60% 0.12 145)'};border-radius:8px;`,
+      insights: insightLines.slice(0,3),
+    };
 
     const spentByCat = {};
     let totalSpent = 0, totalIncome = 0;
@@ -1063,13 +1259,34 @@ class Component extends DCLogic {
     const FREQ_LABEL = {weekly:'Weekly', biweekly:'Bi-weekly', monthly:'Monthly', bimonthly:'Bi-monthly', annually:'Annually', biannually:'Bi-annually'};
     const catColorMap = {};
     s.categories.forEach((c,i) => { catColorMap[c.name] = CAT_COLORS[i % CAT_COLORS.length]; });
-    const sortedTx = [...s.transactions].sort((a,b)=> b.date.localeCompare(a.date));
-    const transactionRows = sortedTx.slice(0,10).map(tx => ({
+    const monthTx = s.transactions.filter(t => appliesToMonth(t, bYear, bMonth));
+    const sortComparators = {
+      date_desc: (a,b)=> b.date.localeCompare(a.date),
+      date_asc: (a,b)=> a.date.localeCompare(b.date),
+      amount_desc: (a,b)=> this.baseAmountForTarget(b, bYear*12+bMonth) - this.baseAmountForTarget(a, bYear*12+bMonth),
+      amount_asc: (a,b)=> this.baseAmountForTarget(a, bYear*12+bMonth) - this.baseAmountForTarget(b, bYear*12+bMonth),
+    };
+    const txSort = s.txSort || 'date_desc';
+    const sortedTx = [...monthTx].sort(sortComparators[txSort] || sortComparators.date_desc);
+    const TX_PAGE_SIZE = 15;
+    const txPage = s.txPage || 0;
+    const txTotalPages = Math.max(1, Math.ceil(sortedTx.length / TX_PAGE_SIZE));
+    const txPageClamped = Math.min(txPage, txTotalPages-1);
+    const pagedTx = sortedTx.slice(txPageClamped*TX_PAGE_SIZE, txPageClamped*TX_PAGE_SIZE+TX_PAGE_SIZE);
+    const txPager = {
+      show: txTotalPages > 1,
+      pages: Array.from({length:txTotalPages}, (_,i) => ({
+        label: String(i+1),
+        onClick: () => this.setState({txPage:i}),
+        style: `min-width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:pointer;background:${i===txPageClamped?'oklch(64% 0.13 55)':'oklch(97% 0.01 70)'};color:${i===txPageClamped?'white':'oklch(45% 0.02 50)'};border:1px solid ${i===txPageClamped?'oklch(64% 0.13 55)':'oklch(90% 0.02 70)'};`,
+      })),
+    };
+    const transactionRows = pagedTx.map(tx => ({
       ...tx, dateLabel:this.fmtShortDate(tx.date),
-      freqSuffix: FREQ_LABEL[tx.frequency] ? ' · '+FREQ_LABEL[tx.frequency] : '',
+      freqSuffix: (()=>{ const rf = this.freqEntryForTarget(tx, bYear*12+bMonth).frequency; return FREQ_LABEL[rf] ? ' · '+FREQ_LABEL[rf] : ''; })(),
       dotStyle:`width:8px;height:8px;border-radius:50%;background:${catColorMap[tx.category] || 'oklch(60% 0.02 50)'};display:inline-block;flex:none;`,
       hasNote: !!tx.note,
-      amountStr: (tx.type==='income'?'+':'-')+'$'+this.fmtMoney(tx.amount),
+      amountStr: (tx.type==='income'?'+':'-')+'$'+this.fmtMoney(this.baseAmountForTarget(tx, bYear*12+bMonth)),
       amountColor: tx.type==='income' ? 'oklch(55% 0.12 145)' : 'oklch(40% 0.02 50)',
       onEdit: () => this.editTransaction(tx),
       onDelete: () => this.confirmDeleteTransaction(tx.id),
@@ -1101,7 +1318,7 @@ class Component extends DCLogic {
     const buildDetail = (catNames, editFn) => {
       const catTx = s.transactions.filter(t => catNames.includes(t.category));
       const thisMonthTx = catTx.filter(t => t.type==='expense' && appliesToMonth(t, nowYear, nowMonth));
-      const thisMonth = thisMonthTx.reduce((sum,t)=>sum+monthlyAmt(t), 0);
+      const thisMonth = thisMonthTx.reduce((sum,t)=>sum+monthlyAmt(t, nowYear*12+nowMonth), 0);
       let ytd = 0, projected = 0;
       for (let m=0; m<=nowMonth; m++) ytd += catTx.filter(t=>t.type==='expense').reduce((sum,t)=> sum + monthContribution(t, nowYear, m), 0);
       for (let m=0; m<=11; m++) projected += catTx.filter(t=>t.type==='expense').reduce((sum,t)=> sum + monthContribution(t, nowYear, m), 0);
@@ -1110,8 +1327,8 @@ class Component extends DCLogic {
         noTransactions: thisMonthTx.length===0,
         transactions: thisMonthTx.map(tx => ({
           ...tx, dateLabel:this.fmtShortDate(tx.date),
-          freqSuffix: FREQ_LABEL[tx.frequency] ? ' · '+FREQ_LABEL[tx.frequency] : '',
-          amountStr: this.fmtMoney(monthlyAmt(tx)),
+          freqSuffix: (()=>{ const rf = this.freqEntryForTarget(tx, nowYear*12+nowMonth).frequency; return FREQ_LABEL[rf] ? ' · '+FREQ_LABEL[rf] : ''; })(),
+          amountStr: this.fmtMoney(monthlyAmt(tx, nowYear*12+nowMonth)),
           onEdit: () => this.editTransaction(tx),
         })),
         onEdit: editFn,
@@ -1158,12 +1375,16 @@ class Component extends DCLogic {
       totalSpentStr: this.fmtMoney(totalSpent), totalBudgetStr: this.fmtMoney(totalBudget),
       totalIncomeStr: this.fmtMoney(totalIncome),
       netStr: this.fmtMoney(Math.abs(net)), netColor: net>=0 ? 'oklch(55% 0.12 145)' : 'oklch(55% 0.15 25)',
-      remainingStr: this.fmtMoney(Math.max(0,totalIncome-totalSpent)),
+      remainingStr: this.fmtMoney(Math.abs(totalIncome-totalSpent)),
+      remainingLabel: totalSpent>totalIncome ? 'over' : 'left',
+      remainingColor: totalSpent>totalIncome ? 'oklch(55% 0.18 25)' : 'oklch(45% 0.02 50)',
       overallBudgetBarStyle: `height:100%;width:${totalIncome>0?Math.min(100,(totalSpent/totalIncome)*100):0}%;background:oklch(60% 0.12 145);border-radius:6px;`,
       incomeVsSpentBarStyle: `height:100%;width:${totalIncome>0?Math.min(100,(totalSpent/totalIncome)*100):(totalSpent>0?100:0)}%;background:${totalSpent>totalIncome?'oklch(60% 0.15 25)':'oklch(60% 0.12 145)'};border-radius:6px;`,
       chartIncomePoints, chartBillsPoints, chartExpensesPoints, chartGridLines, chartMonthLabels,
       catChartSeries, catChartLegend, catChartGridLines,
-      accountsPreview, accountCards,
+      onToggleAllCatChart: this.onToggleAllCatChart,
+      catChartAllLabel: s.categories.every(c => s.chartHiddenCats[c.id]) ? 'Select All' : 'Unselect All',
+      accountsPreview, accountCards, thisMonth,
 
       calMonthLabel: `${MONTHS[s.calMonth]} ${s.calYear}`,
       weekdayLabels: WEEKDAYS.map((w,i)=>({label:w, color: (i===0||i===6) ? 'oklch(58% 0.18 25)' : 'oklch(55% 0.02 50)'})), calWeeks,
@@ -1181,14 +1402,18 @@ class Component extends DCLogic {
       yearOptions: YEAR_OPTIONS,
       monthSelectStyle: 'font-size:13.5px;padding:9px 12px;border-radius:9px;border:1px solid oklch(88% 0.02 70);background:white;color:oklch(35% 0.02 50);font-weight:700;cursor:pointer;',
 
-      categoryRows, transactionRows,
+      categoryRows, transactionRows, txPager, txSort, onTxSortChange:this.onTxSortChange,
       categoryGroupRows: ['Bills & Subscriptions','Expenses'].map(g => {
         const items = categoryRows.filter(c=>c.group===g);
         const total = items.reduce((sum,c)=>sum+(spentByCat[c.name]||0),0);
-        return {group:g, items, empty: items.length===0, totalStr: this.fmtMoney(total), onOpenDetail: () => this.openGroupDetail(g)};
+        const expanded = !s.collapsedGroups[g];
+        return {group:g, items, empty: items.length===0, totalStr: this.fmtMoney(total), onOpenDetail: (e) => { e.stopPropagation(); this.openGroupDetail(g); }, expanded, onToggleCollapse: () => this.toggleGroupCollapse(g), chevronStyle: `display:inline-block;font-size:11px;color:oklch(55% 0.02 50);transition:transform 0.15s;transform:rotate(${expanded?0:-90}deg);`};
       }),
       categoryOptions: s.categories,
       categoryGroups: ['Bills & Subscriptions','Expenses'].map(g => ({group:g, items:s.categories.filter(c=>c.group===g)})).filter(g=>g.items.length),
+      isIncomeForm: s.form.type==='income', isExpenseForm: s.form.type!=='income',
+      isFrequencyLocked: s.form.type!=='income' && (s.categories.find(c=>c.name===s.form.category)?.group === 'Expenses'),
+      isFrequencyUnlocked: !(s.form.type!=='income' && (s.categories.find(c=>c.name===s.form.category)?.group === 'Expenses')),
 
       addBtnStyle, primaryBtnStyle, secondaryBtnStyle, dangerBtnStyle, monthNavBtnStyle, deleteXStyle, fieldLabelStyle, fieldInputStyle,
 
@@ -1217,7 +1442,12 @@ class Component extends DCLogic {
       onFormChange_type: (e)=>this.setFormField('type', e.target.value),
       onFormChange_frequency: (e)=>this.setFormField('frequency', e.target.value),
       onFormChange_note: (e)=>this.setFormField('note', e.target.value),
-      onFormChange_category: (e)=>this.setFormField('category', e.target.value),
+      onFormChange_category: (e)=>{
+        const val = e.target.value;
+        const cat = this.state.categories.find(c=>c.name===val);
+        if (cat && cat.group === 'Expenses') this.setState(s=>({form:{...s.form, category:val, frequency:'once'}}));
+        else this.setFormField('category', val);
+      },
       onFormChange_name: (e)=>this.setFormField('name', e.target.value),
       onFormChange_group: (e)=>this.setFormField('group', e.target.value),
       onFormChange_budget: (e)=>this.setFormField('budget', e.target.value),
@@ -1236,9 +1466,7 @@ class Component extends DCLogic {
 </script>
 
 <div id="gate">
-  <div class="box" id="gate-box">
-    <div class="spin"></div>
-  </div>
+  <div class="box" id="gate-box"><div class="spin"></div></div>
 </div>
 
 <script>
