@@ -1,183 +1,653 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Family Hub</title>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Nunito, sans-serif; background: #f5f0ea; color: #1a1a1a; }
-    #root { width: 100%; height: 100vh; }
-    .container { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
-    .card { background: white; border-radius: 12px; padding: 40px; max-width: 400px; width: 100%; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    .logo { width: 50px; height: 50px; background: #a366cc; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 20px; margin: 0 auto 20px; }
-    h1 { font-size: 24px; margin-bottom: 8px; text-align: center; }
-    .subtitle { font-size: 14px; color: #888; text-align: center; margin-bottom: 24px; }
-    input { width: 100%; padding: 10px 12px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; font-family: inherit; }
-    button { width: 100%; padding: 10px; background: #a366cc; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; }
-    button:hover { background: #8b4fb5; }
-    .toggle { text-align: center; font-size: 13px; margin-top: 16px; }
-    .toggle button { width: auto; background: none; color: #a366cc; padding: 0; margin: 0; }
-    .toggle button:hover { text-decoration: underline; }
-    .error { color: #c41e3a; font-size: 12px; margin-bottom: 12px; }
-    .loading { text-align: center; color: #888; }
-    .spinner { width: 30px; height: 30px; border: 3px solid #ddd; border-top-color: #a366cc; border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .welcome { text-align: center; }
-    .welcome h2 { font-size: 28px; margin-bottom: 16px; }
-    .welcome p { color: #888; margin-bottom: 24px; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Family Hub">
+<meta name="theme-color" content="#F7F1E8">
+<title>Our Family Hub</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23d97757'/><text x='50' y='50' font-size='44' font-weight='700' text-anchor='middle' dominant-baseline='central' font-family='sans-serif' fill='white'>JY</text></svg>">
+<style>
+  :root{
+    --bg:#F7F1E8; --card:#FEFCF9; --line:#E8DFD3; --line-soft:#F0E9DE;
+    --ink:#3A322C; --ink-soft:#7A6E64; --ink-faint:#A2968A;
+    --coral:#D97757; --coral-bg:#FBEDE7;
+    --amber:#C98A3E; --amber-bg:#FAF0E2;
+    --green:#5C9A6B; --green-bg:#EAF3EC;
+    --blue:#6B84B8; --blue-bg:#EDF0F8;
+    --red:#C4614F;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{background:var(--bg);font-family:'Nunito',sans-serif;color:var(--ink);font-size:15px}
+  input,select,textarea,button{font-family:'Nunito',sans-serif;font-size:15px}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px}
+  h1,h2,h3,.head{font-family:'Quicksand',sans-serif;font-weight:700}
+
+  /* ---------- shell ---------- */
+  #app{display:flex;min-height:100vh}
+  .sidebar{width:216px;flex:none;background:var(--card);border-right:1px solid var(--line);padding:24px 14px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh}
+  .brand{display:flex;align-items:center;gap:10px;padding:0 8px 20px}
+  .brand-badge{width:36px;height:36px;border-radius:11px;background:var(--coral);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Quicksand';font-weight:700;font-size:15px;flex:none}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;cursor:pointer;font-weight:600;color:var(--ink-soft);transition:background .15s}
+  .nav-item:hover{background:var(--line-soft)}
+  .nav-item .dot{width:9px;height:9px;border-radius:50%;background:transparent;flex:none}
+  .nav-item.on{color:var(--ink);font-weight:700}
+  .sidebar-foot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line-soft);font-size:12px;color:var(--ink-faint);word-break:break-all}
+  .main{flex:1;min-width:0;padding:28px 34px 80px}
+  .page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+  .page-title{font-size:26px}
+  .page-sub{color:var(--ink-soft);font-size:14px;margin-top:2px}
+  .bottom-nav{display:none}
+
+  /* ---------- pieces ---------- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+  .card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .card-title{display:flex;align-items:center;gap:8px;font-family:'Quicksand';font-weight:700;font-size:15.5px}
+  .card-title .dot{width:10px;height:10px;border-radius:50%}
+  .row{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line-soft)}
+  .row:first-of-type{border-top:none}
+  .empty{font-size:13.5px;color:var(--ink-faint);padding:10px 0}
+  .link{font-size:12.5px;font-weight:700;cursor:pointer;margin-top:10px;display:inline-block}
+  .badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;display:inline-block}
+  .muted{color:var(--ink-soft);font-size:12.5px}
+  .avatar{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex:none;background:var(--blue-bg);color:var(--blue)}
+
+  .btn{padding:9px 15px;border-radius:9px;border:1px solid transparent;font-weight:700;cursor:pointer;font-size:13.5px}
+  .btn-primary{background:var(--coral);color:#fff}
+  .btn-ghost{background:transparent;border-color:var(--line);color:var(--ink-soft)}
+  .btn-sm{padding:5px 11px;font-size:12px;border-radius:7px}
+  .btn-danger{background:transparent;border-color:#E9C9C2;color:var(--red)}
+  .btn-block{width:100%}
+  .icon-btn{background:transparent;border:none;cursor:pointer;color:var(--ink-faint);font-size:16px;padding:4px 8px;border-radius:6px;font-weight:700}
+  .icon-btn:hover{background:var(--line-soft)}
+
+  .bar{height:24px;border-radius:8px;background:var(--line-soft);overflow:hidden;position:relative;margin:6px 0}
+  .bar-fill{height:100%;border-radius:8px}
+  .bar-labels{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:11.5px;font-weight:700}
+
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px}
+  .stat-label{font-size:11.5px;color:var(--ink-soft);font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+  .stat-value{font-size:20px;font-weight:800;margin-top:3px;font-family:'Quicksand'}
+
+  /* ---------- calendar ---------- */
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;flex-wrap:wrap}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .cal-dow{text-align:center;font-size:11px;font-weight:800;color:var(--ink-faint);padding:6px 0;text-transform:uppercase}
+  .cal-cell{min-height:82px;border:1px solid var(--line-soft);border-radius:9px;padding:5px;background:var(--card);cursor:pointer;overflow:hidden}
+  .cal-cell.dim{background:transparent;border-color:transparent;cursor:default}
+  .cal-cell.today{border-color:var(--coral);box-shadow:inset 0 0 0 1px var(--coral)}
+  .cal-num{font-size:11.5px;font-weight:800;color:var(--ink-soft);margin-bottom:3px}
+  .cal-ev{font-size:10.5px;font-weight:700;padding:2px 5px;border-radius:5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* ---------- modal ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(40,32,26,.42);display:flex;align-items:center;justify-content:center;padding:16px;z-index:100}
+  .modal{background:var(--card);border-radius:18px;width:100%;max-width:460px;max-height:88vh;overflow-y:auto;padding:24px}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .field{margin-bottom:13px}
+  .field label{display:block;font-size:11.5px;font-weight:800;color:var(--ink-soft);margin-bottom:5px;text-transform:uppercase;letter-spacing:.03em}
+  .field input,.field select,.field textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink)}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--coral-bg);border-color:var(--coral)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .modal-foot{display:flex;gap:9px;margin-top:18px}
+  .modal-foot .btn{flex:1}
+
+  /* ---------- auth ---------- */
+  .auth-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;width:100%}
+  .auth-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:34px 28px;width:100%;max-width:380px}
+  .auth-logo{width:52px;height:52px;border-radius:14px;background:var(--coral);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Quicksand';font-weight:700;font-size:21px;margin:0 auto 14px}
+  .err{background:#FBEDEA;color:var(--red);font-size:12.5px;font-weight:600;padding:9px 11px;border-radius:8px;margin-bottom:12px}
+  .splash{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:14px;width:100%;color:var(--ink-soft)}
+  .spinner{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--coral);border-radius:50%;animation:spin .9s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ---------- mobile ---------- */
+  @media (max-width:760px){
+    .sidebar{display:none}
+    .main{padding:18px 14px 90px}
+    .page-title{font-size:22px}
+    .grid{grid-template-columns:1fr;gap:14px}
+    .stats{grid-template-columns:1fr;gap:8px}
+    .stat{display:flex;justify-content:space-between;align-items:center}
+    .stat-value{margin-top:0}
+    .cal-cell{min-height:56px;padding:3px;border-radius:7px}
+    .cal-ev{font-size:9px;padding:1px 3px}
+    .two{grid-template-columns:1fr}
+    .bottom-nav{display:flex;position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:8px 4px calc(8px + env(safe-area-inset-bottom));z-index:50}
+    .bn-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 0;cursor:pointer;font-size:10.5px;font-weight:700;color:var(--ink-faint)}
+    .bn-item .dot{width:7px;height:7px;border-radius:50%;background:transparent}
+    .bn-item.on{color:var(--ink)}
+    .modal{max-width:100%;border-radius:16px}
+  }
+</style>
 </head>
 <body>
-  <div id="root">
-    <div class="container">
-      <div class="card">
-        <div class="spinner"></div>
-        <div class="loading">Loading Family Hub...</div>
-      </div>
-    </div>
-  </div>
+<div id="app"><div class="splash"><div class="spinner"></div><div>Loading Family Hub…</div></div></div>
 
-  <!-- Firebase using compat CDN (guaranteed to work) -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<script>
+(function(){
+"use strict";
 
-  <script>
-    // Initialize when this script runs (compat versions guarantee firebase exists)
-    const firebaseConfig = {
-      apiKey: "AIzaSyAG__3I_UfExpHiVAsf2ev9CY3flmmlnbQ",
-      authDomain: "haribo-82b77.firebaseapp.com",
-      projectId: "haribo-82b77",
-      storageBucket: "haribo-82b77.firebasestorage.app",
-      messagingSenderId: "437120438002",
-      appId: "1:437120438002:web:52c2746b6553fafbe24a6b"
-    };
+/* ============ CONFIG ============ */
+var firebaseConfig = {
+  apiKey: "AIzaSyAG__3I_UfExpHiVAsf2ev9CY3flmmlnbQ",
+  authDomain: "haribo-82b77.firebaseapp.com",
+  projectId: "haribo-82b77",
+  storageBucket: "haribo-82b77.firebasestorage.app",
+  messagingSenderId: "437120438002",
+  appId: "1:437120438002:web:52c2746b6553fafbe24a6b"
+};
 
-    try {
-      firebase.initializeApp(firebaseConfig);
-      const auth = firebase.auth();
-      const db = firebase.firestore();
+var PEOPLE = ["Jihoon","Youlim","Both"];
+var MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+var DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+var DEFAULT_CATEGORIES = [
+  {name:"Mortgage", group:"Bills", budget:0},
+  {name:"Hydro", group:"Bills", budget:0},
+  {name:"Internet", group:"Bills", budget:0},
+  {name:"Phone", group:"Bills", budget:0},
+  {name:"Insurance", group:"Bills", budget:0},
+  {name:"Groceries", group:"Expenses", budget:0},
+  {name:"Dining Out", group:"Expenses", budget:0},
+  {name:"Gas", group:"Expenses", budget:0},
+  {name:"Shopping", group:"Expenses", budget:0},
+  {name:"Other", group:"Expenses", budget:0}
+];
 
-      let currentUser = null;
+firebase.initializeApp(firebaseConfig);
+var auth = firebase.auth();
+var db = firebase.firestore();
 
-      auth.onAuthStateChanged((user) => {
-        currentUser = user;
-        render();
-      });
+/* ============ STATE ============ */
+var S = {
+  ready:false, user:null,
+  view:"dashboard",
+  events:[], txns:[], accounts:[], categories:[],
+  calY:new Date().getFullYear(), calM:new Date().getMonth(),
+  budY:new Date().getFullYear(), budM:new Date().getMonth(),
+  modal:null, revealed:{}, authMode:"login", authErr:"", authBusy:false
+};
+var unsubs = [];
 
-      function render() {
-        const root = document.getElementById('root');
-        
-        if (!currentUser) {
-          root.innerHTML = `
-            <div class="container">
-              <div class="card">
-                <div class="logo">JY</div>
-                <h1>Family Hub</h1>
-                <p class="subtitle" id="subtitle">Welcome back</p>
-                <div id="error" class="error" style="display:none;"></div>
-                
-                <input type="email" id="email" placeholder="Email" />
-                <input type="password" id="password" placeholder="Password (6+ chars)" />
-                <input type="text" id="name" placeholder="Name (optional)" style="display:none;" />
-                
-                <button id="submitBtn">Sign In</button>
-                
-                <div class="toggle">
-                  <button id="toggleBtn">Need account? Sign Up</button>
-                </div>
-              </div>
-            </div>
-          `;
+/* ============ HELPERS ============ */
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function money(n){var v=Number(n)||0;return v.toLocaleString("en-CA",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function todayISO(){var d=new Date();return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());}
+function pad(n){return n<10?"0"+n:""+n;}
+function parseISO(s){var p=String(s||"").split("-");return new Date(+p[0],(+p[1]||1)-1,+p[2]||1);}
+function fmtShort(iso){var d=parseISO(iso);return MONTHS[d.getMonth()].slice(0,3)+" "+d.getDate();}
+function fmtLong(iso){var d=parseISO(iso);return DOW[d.getDay()]+", "+MONTHS[d.getMonth()]+" "+d.getDate()+", "+d.getFullYear();}
+function fmtTime(t){
+  if(!t) return "";
+  var p=t.split(":"),h=+p[0],m=p[1]||"00",ap=h>=12?"PM":"AM",hh=h%12;if(hh===0)hh=12;
+  return hh+":"+m+" "+ap;
+}
+function personStyle(p){
+  if(p==="Jihoon") return "background:var(--coral-bg);color:var(--coral)";
+  if(p==="Youlim") return "background:var(--blue-bg);color:var(--blue)";
+  return "background:var(--green-bg);color:var(--green)";
+}
+function inMonth(iso,y,m){var d=parseISO(iso);return d.getFullYear()===y&&d.getMonth()===m;}
+function el(id){return document.getElementById(id);}
+function val(id){var e=el(id);return e?e.value.trim():"";}
 
-          let isSignup = false;
-          const emailInput = document.getElementById('email');
-          const passwordInput = document.getElementById('password');
-          const nameInput = document.getElementById('name');
-          const submitBtn = document.getElementById('submitBtn');
-          const toggleBtn = document.getElementById('toggleBtn');
-          const subtitle = document.getElementById('subtitle');
-          const errorDiv = document.getElementById('error');
-
-          toggleBtn.onclick = () => {
-            isSignup = !isSignup;
-            nameInput.style.display = isSignup ? 'block' : 'none';
-            submitBtn.textContent = isSignup ? 'Create Account' : 'Sign In';
-            toggleBtn.textContent = isSignup ? 'Already have account? Sign In' : 'Need account? Sign Up';
-            subtitle.textContent = isSignup ? 'Create account' : 'Welcome back';
-            errorDiv.style.display = 'none';
-          };
-
-          submitBtn.onclick = async () => {
-            const email = emailInput.value.trim();
-            const password = passwordInput.value.trim();
-            const name = nameInput.value.trim();
-
-            if (!email || !password || (isSignup && password.length < 6)) {
-              errorDiv.textContent = 'Please fill all fields (password 6+ chars)';
-              errorDiv.style.display = 'block';
-              return;
-            }
-
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Loading...';
-
-            try {
-              if (isSignup) {
-                const result = await auth.createUserWithEmailAndPassword(email, password);
-                await db.collection('users').doc(result.user.uid).set({
-                  uid: result.user.uid,
-                  email: email,
-                  name: name || email.split('@')[0]
-                });
-              } else {
-                await auth.signInWithEmailAndPassword(email, password);
-              }
-            } catch (error) {
-              errorDiv.textContent = error.message;
-              errorDiv.style.display = 'block';
-              submitBtn.disabled = false;
-              submitBtn.textContent = isSignup ? 'Create Account' : 'Sign In';
-            }
-          };
-        } else {
-          root.innerHTML = `
-            <div class="container">
-              <div class="card welcome">
-                <div class="logo">✓</div>
-                <h2>Welcome!</h2>
-                <p>Logged in as:<br/><strong>${currentUser.email}</strong></p>
-                <div style="background: #f5f0ea; padding: 16px; border-radius: 6px; margin-bottom: 20px; text-align: left; font-size: 13px; line-height: 1.8;">
-                  <strong>Your Family Hub includes:</strong><br/>
-                  ✓ Shared calendar<br/>
-                  ✓ Budget tracking<br/>
-                  ✓ Account manager<br/>
-                  ✓ Mobile app support
-                </div>
-                <button id="signoutBtn">Sign Out</button>
-              </div>
-            </div>
-          `;
-
-          document.getElementById('signoutBtn').onclick = () => auth.signOut();
-        }
+/* ============ FIRESTORE ============ */
+// Data is SHARED across all signed-in users (household model).
+function subscribe(){
+  unsubs.forEach(function(u){try{u();}catch(e){}});
+  unsubs = [];
+  ["events","transactions","accounts","categories"].forEach(function(col){
+    var u = db.collection(col).onSnapshot(function(snap){
+      var arr = snap.docs.map(function(d){var o=d.data()||{};o.id=d.id;return o;});
+      if(col==="events") S.events=arr;
+      else if(col==="transactions") S.txns=arr;
+      else if(col==="accounts") S.accounts=arr;
+      else {
+        S.categories=arr;
+        if(arr.length===0) seedCategories();
       }
-
       render();
-    } catch (error) {
-      console.error('Firebase init error:', error);
-      document.getElementById('root').innerHTML = `
-        <div class="container">
-          <div class="card" style="text-align: center;">
-            <h2>Error</h2>
-            <p style="color: red;">${error.message}</p>
-            <p>Please try refreshing the page</p>
-          </div>
-        </div>
-      `;
-    }
-  </script>
+    }, function(err){ console.error(col, err); });
+    unsubs.push(u);
+  });
+}
+var seeded=false;
+function seedCategories(){
+  if(seeded) return; seeded=true;
+  var batch = db.batch();
+  DEFAULT_CATEGORIES.forEach(function(c){
+    batch.set(db.collection("categories").doc(), c);
+  });
+  batch.commit().catch(function(e){console.error("seed",e);});
+}
+function save(col, id, data){
+  data.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+  data.updatedBy = S.user ? S.user.email : "";
+  if(id) return db.collection(col).doc(id).update(data);
+  data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+  return db.collection(col).add(data);
+}
+function remove(col,id){return db.collection(col).doc(id).delete();}
+
+/* ============ AUTH ============ */
+auth.onAuthStateChanged(function(user){
+  S.user = user; S.ready = true;
+  if(user){ subscribe(); }
+  else { unsubs.forEach(function(u){try{u();}catch(e){}}); unsubs=[]; S.events=[];S.txns=[];S.accounts=[];S.categories=[]; }
+  render();
+});
+function doAuth(){
+  var email=val("au-email"), pw=val("au-pw"), name=val("au-name");
+  if(!email||pw.length<6){S.authErr="Enter an email and a password of at least 6 characters.";return render();}
+  S.authBusy=true; S.authErr=""; render();
+  var p = S.authMode==="signup"
+    ? auth.createUserWithEmailAndPassword(email,pw).then(function(r){
+        return db.collection("users").doc(r.user.uid).set({uid:r.user.uid,email:email,name:name||email.split("@")[0]});
+      })
+    : auth.signInWithEmailAndPassword(email,pw);
+  p.catch(function(e){ S.authBusy=false; S.authErr=e.message; render(); });
+}
+
+/* ============ RENDER ============ */
+function render(){
+  var app = el("app");
+  if(!S.ready){ app.innerHTML = '<div class="splash"><div class="spinner"></div><div>Loading Family Hub…</div></div>'; return; }
+  if(!S.user){ app.innerHTML = authHTML(); wireAuth(); return; }
+  app.innerHTML = sidebarHTML() + '<main class="main">' + pageHTML() + '</main>' + bottomNavHTML() + (S.modal ? modalHTML() : "");
+  wireApp();
+}
+
+/* ---- auth screen ---- */
+function authHTML(){
+  var signup = S.authMode==="signup";
+  return '<div class="auth-wrap"><div class="auth-card">'
+    + '<div class="auth-logo">JY</div>'
+    + '<h1 style="text-align:center;font-size:22px">Our Family Hub</h1>'
+    + '<p style="text-align:center;color:var(--ink-soft);font-size:13.5px;margin:5px 0 20px">'+(signup?"Create your account":"Welcome back")+'</p>'
+    + (S.authErr?'<div class="err">'+esc(S.authErr)+'</div>':'')
+    + '<div class="field"><label>Email</label><input id="au-email" type="email" autocomplete="email" placeholder="you@example.com"></div>'
+    + '<div class="field"><label>Password</label><input id="au-pw" type="password" autocomplete="'+(signup?"new-password":"current-password")+'" placeholder="At least 6 characters"></div>'
+    + (signup?'<div class="field"><label>Name</label><input id="au-name" type="text" placeholder="Jihoon"></div>':'')
+    + '<button class="btn btn-primary btn-block" id="au-go"'+(S.authBusy?' disabled':'')+'>'+(S.authBusy?"Please wait…":(signup?"Create account":"Sign in"))+'</button>'
+    + '<div style="text-align:center;margin-top:14px;font-size:13px;color:var(--ink-soft)">'
+    + (signup?"Already have an account? ":"Don't have an account? ")
+    + '<span id="au-toggle" style="color:var(--coral);font-weight:700;cursor:pointer">'+(signup?"Sign in":"Sign up")+'</span></div>'
+    + '</div></div>';
+}
+function wireAuth(){
+  el("au-go").onclick = doAuth;
+  el("au-toggle").onclick = function(){ S.authMode = S.authMode==="signup"?"login":"signup"; S.authErr=""; render(); };
+  ["au-email","au-pw","au-name"].forEach(function(id){
+    var e=el(id); if(e) e.addEventListener("keydown",function(ev){ if(ev.key==="Enter") doAuth(); });
+  });
+}
+
+/* ---- nav ---- */
+var NAV = [
+  {k:"dashboard", label:"Dashboard", color:"var(--coral)"},
+  {k:"calendar",  label:"Calendar",  color:"var(--amber)"},
+  {k:"budget",    label:"Budget",    color:"var(--green)"},
+  {k:"accounts",  label:"Accounts",  color:"var(--blue)"}
+];
+function sidebarHTML(){
+  var items = NAV.map(function(n){
+    var on = S.view===n.k;
+    return '<div class="nav-item'+(on?" on":"")+'" data-go="'+n.k+'" style="'+(on?"background:"+softOf(n.k):"")+'">'
+      + '<span class="dot" style="background:'+(on?n.color:"transparent")+'"></span>'+n.label+'</div>';
+  }).join("");
+  return '<aside class="sidebar">'
+    + '<div class="brand"><div class="brand-badge">JY</div><div class="head" style="font-size:15.5px">Our Family Hub</div></div>'
+    + items
+    + '<div class="sidebar-foot">'+esc(S.user.email)+'<br><span id="signout" style="color:var(--coral);font-weight:700;cursor:pointer;display:inline-block;margin-top:8px">Sign out</span></div>'
+    + '</aside>';
+}
+function softOf(k){return k==="dashboard"?"var(--coral-bg)":k==="calendar"?"var(--amber-bg)":k==="budget"?"var(--green-bg)":"var(--blue-bg)";}
+function bottomNavHTML(){
+  return '<nav class="bottom-nav">' + NAV.map(function(n){
+    var on = S.view===n.k;
+    return '<div class="bn-item'+(on?" on":"")+'" data-go="'+n.k+'"><span class="dot" style="background:'+(on?n.color:"transparent")+'"></span>'+n.label+'</div>';
+  }).join("") + '</nav>';
+}
+
+/* ---- pages ---- */
+function pageHTML(){
+  if(S.view==="calendar") return calendarPage();
+  if(S.view==="budget") return budgetPage();
+  if(S.view==="accounts") return accountsPage();
+  return dashboardPage();
+}
+
+function upcoming(n){
+  var t = todayISO();
+  return S.events.filter(function(e){return (e.date||"")>=t;})
+    .sort(function(a,b){return (a.date+(a.time||"")).localeCompare(b.date+(b.time||""));})
+    .slice(0,n||4);
+}
+function monthTotals(y,m){
+  var inc=0,sp=0;
+  S.txns.forEach(function(t){
+    if(!inMonth(t.date,y,m)) return;
+    if(t.type==="income") inc += Number(t.amount)||0; else sp += Number(t.amount)||0;
+  });
+  return {income:inc, spent:sp, left:inc-sp};
+}
+
+function dashboardPage(){
+  var ups = upcoming(4);
+  var tot = monthTotals(S.budY,S.budM);
+  var pct = tot.income>0 ? Math.min(100,(tot.spent/tot.income)*100) : (tot.spent>0?100:0);
+  var accs = S.accounts.slice(0,4);
+
+  var upRows = ups.length ? ups.map(function(e){
+    return '<div class="row" data-edit="event" data-id="'+e.id+'" style="cursor:pointer">'
+      + '<div style="min-width:62px;font-size:12px;font-weight:800;color:var(--amber)">'+esc(fmtShort(e.date))+'</div>'
+      + '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px">'+esc(e.title)+'</div>'
+      + '<div class="muted">'+esc(fmtTime(e.time)||"All day")+' · <span class="badge" style="'+personStyle(e.person)+'">'+esc(e.person||"Both")+'</span></div></div></div>';
+  }).join("") : '<div class="empty">No upcoming events. Enjoy the quiet!</div>';
+
+  var accRows = accs.length ? accs.map(function(a){
+    return '<div class="row" data-edit="account" data-id="'+a.id+'" style="cursor:pointer">'
+      + '<div class="avatar">'+esc((a.service||"?").charAt(0).toUpperCase())+'</div>'
+      + '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px">'+esc(a.service)+'</div>'
+      + '<div class="muted" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(a.username||a.email||"")+'</div></div></div>';
+  }).join("") : '<div class="empty">Nothing saved yet.</div>';
+
+  return '<div class="page-head"><div>'
+    + '<div class="page-title">Good day, Jihoon &amp; Youlim 👋</div>'
+    + '<div class="page-sub">Here\'s what\'s happening at home.</div></div></div>'
+    + '<div class="grid">'
+      + '<div class="card"><div class="card-head"><div class="card-title"><span class="dot" style="background:var(--amber)"></span>Upcoming</div>'
+        + '<button class="btn btn-primary btn-sm" data-add="event">+ Add</button></div>'
+        + upRows
+        + '<div class="link" style="color:var(--amber)" data-go="calendar">View full calendar →</div></div>'
+
+      + '<div class="card"><div class="card-head"><div class="card-title"><span class="dot" style="background:var(--green)"></span>'+MONTHS[S.budM]+' Budget</div>'
+        + '<button class="btn btn-primary btn-sm" data-add="txn">+ Add</button></div>'
+        + '<div class="muted" style="text-align:right;font-weight:700">Income: $'+money(tot.income)+'</div>'
+        + '<div class="bar"><div class="bar-fill" style="width:'+pct+'%;background:'+(tot.spent>tot.income&&tot.income>0?"var(--red)":"var(--green)")+'"></div>'
+        + '<div class="bar-labels"><span>$'+money(tot.spent)+' spent</span><span>$'+money(Math.max(0,tot.left))+' left</span></div></div>'
+        + '<div class="link" style="color:var(--green)" data-go="budget">View full budget →</div></div>'
+
+      + '<div class="card"><div class="card-head"><div class="card-title"><span class="dot" style="background:var(--blue)"></span>Accounts</div>'
+        + '<button class="btn btn-primary btn-sm" data-add="account">+ Add</button></div>'
+        + accRows
+        + '<div class="link" style="color:var(--blue)" data-go="accounts">View all accounts →</div></div>'
+    + '</div>';
+}
+
+function calendarPage(){
+  var y=S.calY,m=S.calM;
+  var first=new Date(y,m,1).getDay();
+  var days=new Date(y,m+1,0).getDate();
+  var t=todayISO();
+  var cells="";
+  DOW.forEach(function(d){cells+='<div class="cal-dow">'+d+'</div>';});
+  for(var i=0;i<first;i++) cells+='<div class="cal-cell dim"></div>';
+  for(var d=1;d<=days;d++){
+    var iso=y+"-"+pad(m+1)+"-"+pad(d);
+    var evs=S.events.filter(function(e){return e.date===iso;})
+      .sort(function(a,b){return (a.time||"").localeCompare(b.time||"");});
+    var chips=evs.slice(0,3).map(function(e){
+      return '<div class="cal-ev" style="'+personStyle(e.person)+'">'+esc(e.title)+'</div>';
+    }).join("");
+    if(evs.length>3) chips+='<div class="cal-ev" style="color:var(--ink-faint)">+'+(evs.length-3)+' more</div>';
+    cells+='<div class="cal-cell'+(iso===t?" today":"")+'" data-day="'+iso+'"><div class="cal-num">'+d+'</div>'+chips+'</div>';
+  }
+  return '<div class="page-head"><div class="page-title">Calendar</div>'
+    + '<button class="btn btn-primary" data-add="event">+ Add event</button></div>'
+    + '<div class="card"><div class="cal-head">'
+      + '<div class="head" style="font-size:17px">'+MONTHS[m]+' '+y+'</div>'
+      + '<div style="display:flex;gap:6px">'
+        + '<button class="btn btn-ghost btn-sm" data-cal="-1">←</button>'
+        + '<button class="btn btn-ghost btn-sm" data-cal="0">Today</button>'
+        + '<button class="btn btn-ghost btn-sm" data-cal="1">→</button></div></div>'
+      + '<div class="cal-grid">'+cells+'</div></div>';
+}
+
+function budgetPage(){
+  var y=S.budY,m=S.budM;
+  var tot=monthTotals(y,m);
+  var list=S.txns.filter(function(t){return inMonth(t.date,y,m);})
+    .sort(function(a,b){return String(b.date).localeCompare(String(a.date));});
+
+  var byCat={};
+  list.forEach(function(t){ if(t.type!=="income"){ byCat[t.category]=(byCat[t.category]||0)+(Number(t.amount)||0); } });
+  var catRows = Object.keys(byCat).sort(function(a,b){return byCat[b]-byCat[a];}).map(function(c){
+    var cat = S.categories.filter(function(x){return x.name===c;})[0];
+    var budget = cat ? Number(cat.budget)||0 : 0;
+    var pct = budget>0 ? Math.min(100,(byCat[c]/budget)*100) : 0;
+    var over = budget>0 && byCat[c]>budget;
+    return '<div style="padding:10px 0;border-top:1px solid var(--line-soft)">'
+      + '<div style="display:flex;justify-content:space-between;font-size:13.5px;font-weight:700"><span>'+esc(c)+'</span>'
+      + '<span>$'+money(byCat[c])+(budget>0?' <span class="muted">/ $'+money(budget)+'</span>':'')+'</span></div>'
+      + (budget>0?'<div class="bar" style="height:7px;margin:6px 0 0"><div class="bar-fill" style="width:'+pct+'%;background:'+(over?"var(--red)":"var(--green)")+'"></div></div>':'')
+      + '</div>';
+  }).join("");
+
+  var txRows = list.length ? list.map(function(t){
+    var isInc = t.type==="income";
+    return '<div class="row" data-edit="txn" data-id="'+t.id+'" style="cursor:pointer;justify-content:space-between">'
+      + '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px">'+esc(t.category||"Uncategorized")+'</div>'
+      + '<div class="muted">'+esc(fmtShort(t.date))+(t.note?" · "+esc(t.note):"")+'</div></div>'
+      + '<div style="font-weight:800;color:'+(isInc?"var(--green)":"var(--ink)")+'">'+(isInc?"+":"−")+'$'+money(t.amount)+'</div></div>';
+  }).join("") : '<div class="empty">No transactions this month.</div>';
+
+  return '<div class="page-head"><div class="page-title">Budget</div>'
+    + '<button class="btn btn-primary" data-add="txn">+ Add transaction</button></div>'
+    + '<div class="card" style="margin-bottom:16px"><div class="cal-head">'
+      + '<div class="head" style="font-size:17px">'+MONTHS[m]+' '+y+'</div>'
+      + '<div style="display:flex;gap:6px">'
+        + '<button class="btn btn-ghost btn-sm" data-bud="-1">←</button>'
+        + '<button class="btn btn-ghost btn-sm" data-bud="0">Today</button>'
+        + '<button class="btn btn-ghost btn-sm" data-bud="1">→</button></div></div>'
+      + '<div class="stats" style="margin-bottom:0">'
+        + '<div class="stat"><div class="stat-label">Income</div><div class="stat-value" style="color:var(--green)">$'+money(tot.income)+'</div></div>'
+        + '<div class="stat"><div class="stat-label">Spent</div><div class="stat-value">$'+money(tot.spent)+'</div></div>'
+        + '<div class="stat"><div class="stat-label">Left</div><div class="stat-value" style="color:'+(tot.left>=0?"var(--green)":"var(--red)")+'">$'+money(tot.left)+'</div></div>'
+      + '</div></div>'
+    + (catRows?'<div class="card" style="margin-bottom:16px"><div class="card-head"><div class="card-title"><span class="dot" style="background:var(--green)"></span>By category</div>'
+      + '<button class="btn btn-ghost btn-sm" data-add="category">+ Category</button></div>'+catRows+'</div>'
+      :'<div class="card" style="margin-bottom:16px"><div class="card-head"><div class="card-title"><span class="dot" style="background:var(--green)"></span>By category</div>'
+      + '<button class="btn btn-ghost btn-sm" data-add="category">+ Category</button></div><div class="empty">No spending yet this month.</div></div>')
+    + '<div class="card"><div class="card-title" style="margin-bottom:6px">Transactions</div>'+txRows+'</div>';
+}
+
+function accountsPage(){
+  var cards = S.accounts.length ? S.accounts.slice().sort(function(a,b){return String(a.service).localeCompare(String(b.service));}).map(function(a){
+    var shown = S.revealed[a.id];
+    return '<div class="card">'
+      + '<div style="display:flex;gap:11px;align-items:center;margin-bottom:12px">'
+        + '<div class="avatar" style="width:40px;height:40px;font-size:16px">'+esc((a.service||"?").charAt(0).toUpperCase())+'</div>'
+        + '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:15px">'+esc(a.service)+'</div>'
+        + '<div class="muted">'+esc(a.owner||"Both")+'</div></div></div>'
+      + (a.username?'<div style="font-size:13px;margin-bottom:5px"><span class="muted">User:</span> '+esc(a.username)+'</div>':'')
+      + (a.email?'<div style="font-size:13px;margin-bottom:5px;word-break:break-all"><span class="muted">Email:</span> '+esc(a.email)+'</div>':'')
+      + (a.secret?'<div style="font-size:13px;margin-bottom:5px;display:flex;gap:8px;align-items:center"><span class="muted">Note:</span> '
+        + '<span style="font-family:monospace">'+(shown?esc(a.secret):"••••••••")+'</span>'
+        + '<button class="icon-btn" data-reveal="'+a.id+'" style="font-size:11px">'+(shown?"hide":"show")+'</button></div>':'')
+      + (a.url?'<div style="font-size:13px;margin-bottom:5px;word-break:break-all"><a href="'+esc(a.url)+'" target="_blank" rel="noopener" style="color:var(--blue)">'+esc(a.url)+'</a></div>':'')
+      + (a.note?'<div class="muted" style="margin-top:6px">'+esc(a.note)+'</div>':'')
+      + '<div style="display:flex;gap:8px;margin-top:14px">'
+        + '<button class="btn btn-ghost btn-sm" style="flex:1" data-edit="account" data-id="'+a.id+'">Edit</button></div>'
+      + '</div>';
+  }).join("") : '<div class="card"><div class="empty">No accounts saved yet. Tap “Add account” to start your directory.</div></div>';
+
+  return '<div class="page-head"><div><div class="page-title">Accounts</div>'
+    + '<div class="page-sub">Shared directory of logins and services.</div></div>'
+    + '<button class="btn btn-primary" data-add="account">+ Add account</button></div>'
+    + '<div style="background:var(--amber-bg);border:1px solid #EBD9BE;border-radius:12px;padding:12px 14px;font-size:12.5px;color:#7A5A28;margin-bottom:16px">'
+    + '<strong>A note on passwords:</strong> anything saved here is stored as readable text in your database. Use this for usernames, account numbers, and hints — keep real passwords in a dedicated password manager.</div>'
+    + '<div class="grid">'+cards+'</div>';
+}
+
+/* ---- modal ---- */
+function modalHTML(){
+  var m=S.modal, body="", title="";
+  var d=m.data||{};
+  if(m.type==="event"){
+    title=(m.id?"Edit":"Add")+" event";
+    body = '<div class="field"><label>Title</label><input id="f-title" value="'+esc(d.title||"")+'" placeholder="Dentist, dinner with friends…"></div>'
+      + '<div class="two"><div class="field"><label>Date</label><input id="f-date" type="date" value="'+esc(d.date||todayISO())+'"></div>'
+      + '<div class="field"><label>Time</label><input id="f-time" type="time" value="'+esc(d.time||"")+'"></div></div>'
+      + '<div class="field"><label>Who</label><select id="f-person">'+PEOPLE.map(function(p){
+          return '<option value="'+p+'"'+((d.person||"Both")===p?" selected":"")+'>'+p+'</option>';}).join("")+'</select></div>'
+      + '<div class="field"><label>Location</label><input id="f-location" value="'+esc(d.location||"")+'" placeholder="Optional"></div>'
+      + '<div class="field"><label>Note</label><textarea id="f-note" rows="2" placeholder="Optional">'+esc(d.note||"")+'</textarea></div>';
+  } else if(m.type==="txn"){
+    title=(m.id?"Edit":"Add")+" transaction";
+    var opts = S.categories.slice().sort(function(a,b){return String(a.group+a.name).localeCompare(String(b.group+b.name));})
+      .map(function(c){return '<option value="'+esc(c.name)+'"'+(d.category===c.name?" selected":"")+'>'+esc(c.name)+' ('+esc(c.group)+')</option>';}).join("");
+    body = '<div class="two"><div class="field"><label>Type</label><select id="f-type">'
+        + '<option value="expense"'+(d.type!=="income"?" selected":"")+'>Expense</option>'
+        + '<option value="income"'+(d.type==="income"?" selected":"")+'>Income</option></select></div>'
+      + '<div class="field"><label>Amount ($)</label><input id="f-amount" type="number" step="0.01" inputmode="decimal" value="'+esc(d.amount!=null?d.amount:"")+'" placeholder="0.00"></div></div>'
+      + '<div class="field"><label>Category</label><select id="f-category">'+opts+'</select></div>'
+      + '<div class="two"><div class="field"><label>Date</label><input id="f-date" type="date" value="'+esc(d.date||todayISO())+'"></div>'
+      + '<div class="field"><label>Who</label><select id="f-person">'+PEOPLE.map(function(p){
+          return '<option value="'+p+'"'+((d.person||"Both")===p?" selected":"")+'>'+p+'</option>';}).join("")+'</select></div></div>'
+      + '<div class="field"><label>Note</label><input id="f-note" value="'+esc(d.note||"")+'" placeholder="Optional"></div>';
+  } else if(m.type==="account"){
+    title=(m.id?"Edit":"Add")+" account";
+    body = '<div class="field"><label>Service</label><input id="f-service" value="'+esc(d.service||"")+'" placeholder="Hydro Ottawa, Netflix…"></div>'
+      + '<div class="two"><div class="field"><label>Owner</label><select id="f-owner">'+PEOPLE.map(function(p){
+          return '<option value="'+p+'"'+((d.owner||"Both")===p?" selected":"")+'>'+p+'</option>';}).join("")+'</select></div>'
+      + '<div class="field"><label>Username</label><input id="f-username" value="'+esc(d.username||"")+'"></div></div>'
+      + '<div class="field"><label>Email on file</label><input id="f-email" value="'+esc(d.email||"")+'"></div>'
+      + '<div class="field"><label>Account # / hint</label><input id="f-secret" value="'+esc(d.secret||"")+'" placeholder="Not for real passwords"></div>'
+      + '<div class="field"><label>Website</label><input id="f-url" value="'+esc(d.url||"")+'" placeholder="https://…"></div>'
+      + '<div class="field"><label>Note</label><textarea id="f-note" rows="2">'+esc(d.note||"")+'</textarea></div>';
+  } else if(m.type==="category"){
+    title=(m.id?"Edit":"Add")+" category";
+    body = '<div class="field"><label>Name</label><input id="f-name" value="'+esc(d.name||"")+'" placeholder="Groceries"></div>'
+      + '<div class="field"><label>Group</label><select id="f-group">'
+        + '<option value="Bills"'+(d.group==="Bills"?" selected":"")+'>Bills</option>'
+        + '<option value="Expenses"'+(d.group!=="Bills"?" selected":"")+'>Expenses</option></select></div>'
+      + '<div class="field"><label>Monthly budget ($, optional)</label><input id="f-budget" type="number" step="1" inputmode="decimal" value="'+esc(d.budget||"")+'"></div>';
+  } else if(m.type==="day"){
+    var evs=S.events.filter(function(e){return e.date===m.date;})
+      .sort(function(a,b){return (a.time||"").localeCompare(b.time||"");});
+    title=fmtLong(m.date);
+    body = (evs.length ? evs.map(function(e){
+      return '<div class="row" data-edit="event" data-id="'+e.id+'" style="cursor:pointer">'
+        + '<div style="flex:1;min-width:0"><div style="font-weight:700">'+esc(e.title)+'</div>'
+        + '<div class="muted">'+esc(fmtTime(e.time)||"All day")+' · <span class="badge" style="'+personStyle(e.person)+'">'+esc(e.person||"Both")+'</span>'
+        + (e.location?' · '+esc(e.location):'')+'</div></div></div>';
+    }).join("") : '<div class="empty">Nothing scheduled.</div>')
+      + '<button class="btn btn-primary btn-block" style="margin-top:14px" data-add="event" data-date="'+m.date+'">+ Add event on this day</button>';
+  }
+
+  var foot = m.type==="day" ? ""
+    : '<div class="modal-foot">'
+      + (m.id?'<button class="btn btn-danger" id="m-del">Delete</button>':'')
+      + '<button class="btn btn-ghost" id="m-cancel">Cancel</button>'
+      + '<button class="btn btn-primary" id="m-save">Save</button></div>';
+
+  return '<div class="overlay" id="overlay"><div class="modal" id="modal">'
+    + '<div class="modal-head"><h3 style="font-size:18px">'+esc(title)+'</h3>'
+    + '<button class="icon-btn" id="m-close">✕</button></div>'
+    + body + foot + '</div></div>';
+}
+
+/* ---- wiring ---- */
+function wireApp(){
+  var app = el("app");
+
+  app.querySelectorAll("[data-go]").forEach(function(n){
+    n.onclick=function(){ S.view=n.getAttribute("data-go"); S.modal=null; window.scrollTo(0,0); render(); };
+  });
+  var so = el("signout"); if(so) so.onclick=function(){ auth.signOut(); };
+
+  app.querySelectorAll("[data-add]").forEach(function(n){
+    n.onclick=function(ev){
+      ev.stopPropagation();
+      var t=n.getAttribute("data-add"), day=n.getAttribute("data-date");
+      S.modal={type:t, id:null, data: day?{date:day}:{}};
+      render();
+    };
+  });
+  app.querySelectorAll("[data-edit]").forEach(function(n){
+    n.onclick=function(ev){
+      ev.stopPropagation();
+      var t=n.getAttribute("data-edit"), id=n.getAttribute("data-id");
+      var src = t==="event"?S.events : t==="txn"?S.txns : t==="account"?S.accounts : S.categories;
+      var rec = src.filter(function(x){return x.id===id;})[0];
+      if(rec){ S.modal={type:t, id:id, data:rec}; render(); }
+    };
+  });
+  app.querySelectorAll("[data-day]").forEach(function(n){
+    n.onclick=function(){ S.modal={type:"day", date:n.getAttribute("data-day")}; render(); };
+  });
+  app.querySelectorAll("[data-reveal]").forEach(function(n){
+    n.onclick=function(){ var id=n.getAttribute("data-reveal"); S.revealed[id]=!S.revealed[id]; render(); };
+  });
+  app.querySelectorAll("[data-cal]").forEach(function(n){
+    n.onclick=function(){
+      var d=+n.getAttribute("data-cal");
+      if(d===0){ var t=new Date(); S.calY=t.getFullYear(); S.calM=t.getMonth(); }
+      else { S.calM+=d; if(S.calM<0){S.calM=11;S.calY--;} if(S.calM>11){S.calM=0;S.calY++;} }
+      render();
+    };
+  });
+  app.querySelectorAll("[data-bud]").forEach(function(n){
+    n.onclick=function(){
+      var d=+n.getAttribute("data-bud");
+      if(d===0){ var t=new Date(); S.budY=t.getFullYear(); S.budM=t.getMonth(); }
+      else { S.budM+=d; if(S.budM<0){S.budM=11;S.budY--;} if(S.budM>11){S.budM=0;S.budY++;} }
+      render();
+    };
+  });
+
+  if(S.modal){
+    var close=function(){ S.modal=null; render(); };
+    el("m-close").onclick=close;
+    var c=el("m-cancel"); if(c) c.onclick=close;
+    el("overlay").onclick=function(e){ if(e.target.id==="overlay") close(); };
+    var sv=el("m-save"); if(sv) sv.onclick=saveModal;
+    var dl=el("m-del"); if(dl) dl.onclick=function(){
+      var col=colOf(S.modal.type);
+      if(confirm("Delete this permanently?")) remove(col,S.modal.id).then(close).catch(function(e){alert(e.message);});
+    };
+  }
+}
+function colOf(t){return t==="event"?"events":t==="txn"?"transactions":t==="account"?"accounts":"categories";}
+
+function saveModal(){
+  var m=S.modal, data={};
+  if(m.type==="event"){
+    if(!val("f-title")) return alert("Please give the event a title.");
+    data={title:val("f-title"), date:val("f-date")||todayISO(), time:val("f-time"),
+          person:val("f-person"), location:val("f-location"), note:val("f-note")};
+  } else if(m.type==="txn"){
+    var amt=parseFloat(val("f-amount"));
+    if(isNaN(amt)||amt<=0) return alert("Please enter an amount greater than zero.");
+    data={type:val("f-type"), amount:amt, category:val("f-category"),
+          date:val("f-date")||todayISO(), person:val("f-person"), note:val("f-note")};
+  } else if(m.type==="account"){
+    if(!val("f-service")) return alert("Please name the service.");
+    data={service:val("f-service"), owner:val("f-owner"), username:val("f-username"),
+          email:val("f-email"), secret:val("f-secret"), url:val("f-url"), note:val("f-note")};
+  } else if(m.type==="category"){
+    if(!val("f-name")) return alert("Please name the category.");
+    data={name:val("f-name"), group:val("f-group"), budget:parseFloat(val("f-budget"))||0};
+  }
+  save(colOf(m.type), m.id, data)
+    .then(function(){ S.modal=null; render(); })
+    .catch(function(e){ alert("Could not save: "+e.message); });
+}
+
+})();
+</script>
 </body>
 </html>
