@@ -38,10 +38,17 @@ firebase.initializeApp({
   input,select{font-family:'Nunito',sans-serif;}
   @keyframes fadeIn{from{opacity:0}to{opacity:1}}
   @keyframes popIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+  *, *::before, *::after { box-sizing: border-box; }
   @media (max-width: 820px) {
     .income-bar-desktop { display: none !important; }
     .income-bar-mobile { display: flex !important; }
     .cal-wx-temp { display: none !important; }
+    .app-main { padding-left: 8px !important; padding-right: 8px !important; }
+    .cal-card { padding: 10px !important; }
+    .cal-weekday-row { gap: 3px !important; }
+    .cal-week-col { gap: 4px !important; }
+    .cal-week-row { gap: 3px !important; }
+    .cal-bar { padding-left: 3px !important; padding-right: 3px !important; font-size: 9.5px !important; }
   }
   @media (max-width: 820px) {
     .app-shell { flex-direction: column !important; }
@@ -151,8 +158,10 @@ firebase.initializeApp({
                   </sc-if>
                 </div>
                 <div style="flex:1;min-width:0;">
-                  <div style="font-weight:700;font-size:14px;">{{ ev.title }}</div>
-                  <div style="font-size:12.5px;color:oklch(50% 0.02 50);display:flex;align-items:center;gap:6px;">{{ ev.timeDisplay }} · <span style="{{ ev.personBadgeStyle }}">{{ ev.person }}</span></div>
+                  <div style="font-weight:700;font-size:14px;">{{ ev.occasionIcon }}{{ ev.title }}</div>
+                  <sc-if value="{{ ev.hasMeta }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size:12.5px;color:oklch(50% 0.02 50);display:flex;align-items:center;gap:6px;">{{ ev.timeDisplay }} · <span style="{{ ev.personBadgeStyle }}">{{ ev.person }}</span></div>
+                  </sc-if>
                 </div>
               </div>
             </sc-for>
@@ -237,7 +246,7 @@ firebase.initializeApp({
         </div>
 
         <div class="cal-split" style="display:grid;grid-template-columns:2fr 1fr;gap:24px;align-items:flex-start;">
-          <div style="background:oklch(99% 0.008 70);border:1px solid oklch(90% 0.02 70);border-radius:18px;padding:22px;">
+          <div style="background:oklch(99% 0.008 70);border:1px solid oklch(90% 0.02 70);border-radius:18px;padding:22px;" class="cal-card">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;position:relative;">
               <button onClick="{{ prevMonth }}" style="{{ monthNavBtnStyle }}">←</button>
               <div style="display:flex;align-items:center;gap:8px;">
@@ -261,14 +270,17 @@ firebase.initializeApp({
                 </div>
               </sc-if>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;">
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;" class="cal-weekday-row">
               <sc-for list="{{ weekdayLabels }}" as="wd" hint-placeholder-count="7">
                 <div style="text-align:center;font-size:11.5px;font-weight:800;padding:4px 0;color:{{ wd.color }};">{{ wd.label }}</div>
               </sc-for>
             </div>
-            <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;flex-direction:column;gap:6px;" class="cal-week-col">
               <sc-for list="{{ calWeeks }}" as="week" hint-placeholder-count="5">
-                <div style="{{ week.weekStyle }}">
+                <div style="{{ week.weekStyle }}" class="cal-week-row">
+                  <sc-for list="{{ week.occasionWashes }}" as="ow" hint-placeholder-count="0">
+                    <div style="{{ ow.style }}"></div>
+                  </sc-for>
                   <sc-if value="{{ week.hasToday }}" hint-placeholder-val="{{ false }}">
                     <div style="{{ week.todayBgStyle }}"></div>
                   </sc-if>
@@ -284,7 +296,7 @@ firebase.initializeApp({
                   </div>
                   <div style="{{ week.barsAreaStyle }}">
                     <sc-for list="{{ week.bars }}" as="bar" hint-placeholder-count="1">
-                      <div style="{{ bar.style }}" onClick="{{ bar.onEdit }}" title="{{ bar.title }}">{{ bar.title }}</div>
+                      <div style="{{ bar.style }}" onClick="{{ bar.onEdit }}" title="{{ bar.title }}" class="cal-bar">{{ bar.title }}</div>
                     </sc-for>
                   </div>
                 </div>
@@ -292,6 +304,7 @@ firebase.initializeApp({
             </div>
           </div>
 
+          <div style="display:flex;flex-direction:column;gap:24px;">
           <div style="background:oklch(99% 0.008 70);border:1px solid oklch(90% 0.02 70);border-radius:18px;padding:22px;">
             <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:16px;margin-bottom:14px;">Upcoming</div>
             <sc-for list="{{ upcomingFull }}" as="ev" hint-placeholder-count="5">
@@ -303,14 +316,36 @@ firebase.initializeApp({
                   </sc-if>
                 </div>
                 <div style="flex:1;min-width:0;cursor:pointer;" onClick="{{ ev.onEdit }}">
-                  <div style="font-weight:700;font-size:14px;">{{ ev.title }}</div>
-                  <div style="font-size:12.5px;color:oklch(50% 0.02 50);display:flex;align-items:center;gap:6px;">{{ ev.timeDisplay }} · <span style="{{ ev.personBadgeStyle }}">{{ ev.person }}</span></div>
+                  <div style="font-weight:700;font-size:14px;">{{ ev.occasionIcon }}{{ ev.title }}</div>
+                  <sc-if value="{{ ev.hasMeta }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size:12.5px;color:oklch(50% 0.02 50);display:flex;align-items:center;gap:6px;">{{ ev.timeDisplay }} · <span style="{{ ev.personBadgeStyle }}">{{ ev.person }}</span></div>
+                  </sc-if>
                 </div>
                 <div onClick="{{ ev.onDelete }}" style="{{ deleteXStyle }}">✕</div>
               </div>
             </sc-for>
+            <div style="margin-top:10px;font-size:11px;color:oklch(60% 0.02 50);">Weather by <a href="https://open-meteo.com/" target="_blank" rel="noopener" style="color:inherit;">Open-Meteo</a></div>
           </div>
-          <div style="margin-top:10px;font-size:11px;color:oklch(60% 0.02 50);">Weather by <a href="https://open-meteo.com/" target="_blank" rel="noopener" style="color:inherit;">Open-Meteo</a></div>
+
+          <div style="background:oklch(99% 0.008 70);border:1px solid oklch(90% 0.02 70);border-radius:18px;padding:22px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:16px;">Occasions</div>
+              <button onClick="{{ openAddOccasion }}" style="{{ addBtnStyle }}">+ Add</button>
+            </div>
+            <sc-for list="{{ occasionRows }}" as="oc" hint-placeholder-count="3">
+              <div onClick="{{ oc.onEdit }}" style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid oklch(93% 0.015 70);cursor:pointer;">
+                <div style="font-size:18px;line-height:1;flex:none;margin-top:1px;">{{ oc.icon }}</div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-weight:700;font-size:14px;">{{ oc.title }}</div>
+                  <div style="font-size:12.5px;color:oklch(50% 0.02 50);">{{ oc.dateLabel }} · {{ oc.whenLabel }}<sc-if value="{{ oc.hasYears }}" hint-placeholder-val="{{ false }}"> · {{ oc.yearsLabel }}</sc-if></div>
+                </div>
+              </div>
+            </sc-for>
+            <sc-if value="{{ noOccasions }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size:13px;color:oklch(55% 0.02 50);padding:6px 0;">No occasions yet. Add a birthday or anniversary to see it here every year.</div>
+            </sc-if>
+          </div>
+          </div>
         </div>
 
         <div style="background:oklch(99% 0.008 70);border:1px solid oklch(90% 0.02 70);border-radius:18px;padding:22px;margin-top:24px;">
@@ -597,6 +632,24 @@ firebase.initializeApp({
         </div>
       </sc-if>
 
+      <sc-if value="{{ isOccasionModal }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <label style="{{ fieldLabelStyle }}">Type<select style="{{ fieldInputStyle }}" value="{{ form.occasionType }}" onChange="{{ onFormChange_occasionType }}">
+            <option value="birthday">Birthday</option>
+            <option value="anniversary">Anniversary</option>
+            <option value="celebration">Celebration</option>
+            <option value="other">Other</option>
+          </select></label>
+          <label style="{{ fieldLabelStyle }}">Title<input style="{{ fieldInputStyle }}" value="{{ form.title }}" onChange="{{ onFormChange_title }}" placeholder="Youlim's birthday"></label>
+          <label style="{{ fieldLabelStyle }}">Date<input type="date" lang="en-CA" style="{{ fieldInputStyle }}" value="{{ form.date }}" onChange="{{ onFormChange_date }}"></label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:oklch(40% 0.02 50);cursor:pointer;">
+            <input type="checkbox" checked="{{ form.yearUnknown }}" onChange="{{ onFormChange_yearUnknown }}" style="width:16px;height:16px;cursor:pointer;"></input>
+            I don't know the year
+          </label>
+          <label style="{{ fieldLabelStyle }}">Note<textarea style="{{ fieldInputStyle }}" value="{{ form.note }}" onChange="{{ onFormChange_note }}" placeholder="Optional note" rows="3"></textarea></label>
+        </div>
+      </sc-if>
+
       <sc-if value="{{ isTransactionModal }}" hint-placeholder-val="{{ false }}">
         <div style="display:flex;flex-direction:column;gap:12px;">
           <div style="display:flex;gap:12px;">
@@ -693,7 +746,9 @@ firebase.initializeApp({
             <div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-top:1px solid oklch(93% 0.015 70);">
               <div style="flex:1;min-width:0;cursor:pointer;" onClick="{{ ev.onEdit }}">
                 <div style="font-weight:700;font-size:14px;">{{ ev.title }}</div>
-                <div style="font-size:12.5px;color:oklch(50% 0.02 50);display:flex;align-items:center;gap:6px;">{{ ev.timeDisplay }} · <span style="{{ ev.personBadgeStyle }}">{{ ev.person }}</span></div>
+                <sc-if value="{{ ev.timeDisplay }}" hint-placeholder-val="{{ true }}">
+                  <div style="font-size:12.5px;color:oklch(50% 0.02 50);display:flex;align-items:center;gap:6px;">{{ ev.timeDisplay }} · <span style="{{ ev.personBadgeStyle }}">{{ ev.person }}</span></div>
+                </sc-if>
               </div>
               <div onClick="{{ ev.onDelete }}" style="{{ deleteXStyle }}">✕</div>
             </div>
@@ -896,6 +951,19 @@ class Component extends DCLogic {
     }
     return t.amount;
   }
+  occasionIconFor(type){
+    return {birthday:'🎂', anniversary:'💍', celebration:'🎉', other:'📌'}[type] || '📌';
+  }
+  occurrencesFor(ev, years){
+    const d = new Date(ev.date+'T00:00:00');
+    const origMonth = d.getMonth(), origDay = d.getDate(), origYear = d.getFullYear();
+    return years.map(y => {
+      const daysIn = new Date(y, origMonth+1, 0).getDate();
+      const day = Math.min(origDay, daysIn); // Feb 29 -> Feb 28 in non-leap years
+      const dateStr = `${y}-${P2(origMonth+1)}-${P2(day)}`;
+      return {...ev, date:dateStr, endDate:dateStr, occurrenceYear:y, yearsSince: ev.yearUnknown ? null : (y-origYear), __original: ev};
+    });
+  }
 
   goDashboard = () => this.setState({view:'dashboard'});
   goCalendar = () => this.setState({view:'calendar'});
@@ -940,6 +1008,8 @@ class Component extends DCLogic {
 
   openAddEvent = () => this.setState({modal:{type:'event',editing:null}, form:{title:'',date:TODAY,endDate:TODAY,time:'',endTime:'',person:'Both',location:'',note:''}, formError:null});
   openAddEventForDate = (date) => this.setState({modal:{type:'event',editing:null}, form:{title:'',date,endDate:date,time:'',endTime:'',person:'Both',location:'',note:''}, formError:null});
+  openAddOccasion = () => this.setState({modal:{type:'occasion',editing:null}, form:{title:'',date:TODAY,occasionType:'birthday',person:'',note:'',yearUnknown:false}, formError:null});
+  editOccasion(ev){ this.setState({modal:{type:'occasion',editing:ev.id}, form:{...ev, occasionType:ev.occasionType||'birthday', yearUnknown:!!ev.yearUnknown}, formError:null}); }
   openAddTransaction = () => this.setState({modal:{type:'transaction',editing:null}, form:{desc:'',amount:'',type:'expense',frequency:'once',category:this.state.categories[0]?.name||'',date:TODAY,note:'',payer:'Jihoon'}});
   openAddCategory = () => this.setState({modal:{type:'category',editing:null}, form:{name:'',group:'Expenses'}});
   openAddAccount = () => this.setState({modal:{type:'account',editing:null}, form:{service:'',owner:'Jihoon',username:'',password:'',url:'',note:''}});
@@ -958,7 +1028,10 @@ class Component extends DCLogic {
     const rh = Math.floor(total/60), rm = total%60;
     return String(rh).padStart(2,'0')+':'+String(rm).padStart(2,'0');
   }
-  editEvent(ev){ this.setState({modal:{type:'event',editing:ev.id}, form:{...ev, time:this.roundTimeTo5(ev.time), endTime:this.roundTimeTo5(ev.endTime)}, formError:null}); }
+  editEvent(ev){
+    if (ev.annual) return this.editOccasion(ev.__original || ev);
+    this.setState({modal:{type:'event',editing:ev.id}, form:{...ev, time:this.roundTimeTo5(ev.time), endTime:this.roundTimeTo5(ev.endTime)}, formError:null});
+  }
   formatTime12h(t){
     if (!t) return '';
     const [h,m] = t.split(':').map(Number);
@@ -1053,6 +1126,10 @@ class Component extends DCLogic {
       }
       const entry = {id: editing || this.genId(), title:f.title||'Untitled', date:f.date||TODAY, endDate:f.endDate||f.date||TODAY, time:f.time||'', endTime:f.endTime||'', person:f.person||'Both', location:f.location||'', note:f.note||''};
       this.setState(s => ({events: editing ? s.events.map(e=>e.id===editing?entry:e) : [...s.events, entry]}));
+    } else if (type === 'occasion') {
+      const date = f.date || TODAY;
+      const entry = {id: editing || this.genId(), title:f.title||'Untitled', date, endDate:date, time:'', endTime:'', person:'', note:f.note||'', annual:true, occasionType:f.occasionType||'other', yearUnknown:!!f.yearUnknown};
+      this.setState(s => ({events: editing ? s.events.map(e=>e.id===editing?entry:e) : [...s.events, entry]}));
     } else if (type === 'transaction') {
       const existingTx = editing ? this.state.transactions.find(t=>t.id===editing) : null;
       const newAmount = parseFloat(f.amount)||0;
@@ -1094,7 +1171,7 @@ class Component extends DCLogic {
   deleteModalEntry = () => {
     const {type, editing} = this.state.modal;
     if (!editing) return;
-    if (type === 'event') this.deleteEvent(editing);
+    if (type === 'event' || type === 'occasion') this.deleteEvent(editing);
     else if (type === 'transaction') return this.confirmDeleteTransaction(editing, true);
     else if (type === 'category') return this.deleteCategory(editing);
     else if (type === 'account') this.deleteAccount(editing);
@@ -1170,10 +1247,11 @@ class Component extends DCLogic {
         const dow = new Date(dateStr+'T00:00:00').getDay();
         const isWeekend = dow === 0 || dow === 6;
         const wx = this.weatherForDate(dateStr);
+        const hasOccasionDay = events.some(e => e.annual && (e.occasionType==='birthday' || e.occasionType==='celebration') && dateStr >= e.date && dateStr <= (e.endDate||e.date));
         return {
           blank:false, id:dateStr, dayNum:d,
           numWrapStyle:`padding:6px 6px 2px;min-height:22px;height:100%;background:transparent;border-radius:8px 8px 0 0;cursor:pointer;display:flex;align-items:flex-start;gap:4px;${col<6?'border-right:1px solid oklch(91% 0.015 70);':''}`,
-          dayNumStyle:`display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 4px;border-radius:6px;font-size:12px;font-weight:${isToday?'800':'700'};color:${isToday?'oklch(64% 0.15 45)':isWeekend?'oklch(58% 0.18 25)':'oklch(45% 0.02 50)'};background:${isToday?'oklch(88% 0.07 45)':'transparent'};`,
+          dayNumStyle:`display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 4px;border-radius:6px;font-size:12px;font-weight:${isToday||hasOccasionDay?'800':'700'};color:${isToday?'oklch(64% 0.15 45)':isWeekend?'oklch(58% 0.18 25)':'oklch(45% 0.02 50)'};background:${isToday?'oklch(88% 0.07 45)':'transparent'};${(!isToday&&hasOccasionDay)?'box-shadow:0 0 0 1.5px oklch(78% 0.09 80);':''}`,
           hasWeather: !!wx, weatherIcon: wx?wx.icon:'', weatherTemp: wx?wx.tempStr:'',
           onOpenDay: () => dayFn(dateStr),
         };
@@ -1184,7 +1262,7 @@ class Component extends DCLogic {
       if (firstIdx !== -1) {
         const weekStart = weekDays[firstIdx], weekEnd = weekDays[lastIdx];
         const weekEvents = events.filter(e => e.date <= weekEnd && (e.endDate||e.date) >= weekStart);
-        weekEvents.sort((a,b)=> a.date.localeCompare(b.date));
+        weekEvents.sort((a,b)=> (b.annual?1:0) - (a.annual?1:0) || a.date.localeCompare(b.date));
         const rows = []; // each row: last occupied col
         for (const ev of weekEvents){
           const evEnd = ev.endDate||ev.date;
@@ -1193,10 +1271,12 @@ class Component extends DCLogic {
           let rowIdx = rows.findIndex(r => r < colStart);
           if (rowIdx === -1) { rowIdx = rows.length; rows.push(colEnd); } else rows[rowIdx] = colEnd;
           const pc = this.personColors(ev.person);
+          const yrsLabel = (ev.annual && ev.yearsSince != null) ? ` (${ev.yearsSince})` : '';
           bars.push({
             id: ev.id+'-'+w,
-            title: ev.title,
-            style: `position:absolute;left:calc(${colStart}/7*100% + 4px);width:calc(${(colEnd-colStart+1)}/7*100% - 8px);top:${30+rowIdx*21}px;height:17px;background:${pc.bg};color:${pc.text};border-radius:5px;font-size:10.5px;font-weight:700;padding:1px 6px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;pointer-events:auto;box-sizing:border-box;`,
+            title: (ev.annual ? this.occasionIconFor(ev.occasionType)+' ' : '') + ev.title + yrsLabel,
+            style: (()=>{ const mobile = (typeof window!=='undefined' && window.innerWidth<=820); const inset=mobile?1:4, wReduce=mobile?2:8, pad=mobile?3:6, fs=mobile?9.5:10.5;
+              return `position:absolute;left:calc(${colStart}/7*100% + ${inset}px);width:calc(${(colEnd-colStart+1)}/7*100% - ${wReduce}px);top:${30+rowIdx*21}px;height:17px;background:${pc.bg};color:${pc.text};border-radius:5px;font-size:${fs}px;font-weight:700;padding:1px ${pad}px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;pointer-events:auto;box-sizing:border-box;`; })(),
             onEdit: (e) => { e.stopPropagation(); editFn(ev); },
           });
         }
@@ -1204,8 +1284,15 @@ class Component extends DCLogic {
       const maxRows = bars.length ? Math.max(...bars.map(b=>parseInt(b.style.match(/top:(\d+)px/)[1])/21))+1 : 0;
       const totalHeight = Math.max(92, maxRows*21+4+30);
       const todayIdx = weekDays.findIndex(d=>d===TODAY);
+      const occasionCols = [];
+      weekDays.forEach((dateStr, col) => {
+        if (!dateStr) return;
+        const hasBirthdayOrCelebration = events.some(e => e.annual && (e.occasionType==='birthday' || e.occasionType==='celebration') && dateStr >= e.date && dateStr <= (e.endDate||e.date));
+        if (hasBirthdayOrCelebration) occasionCols.push(col);
+      });
       weeks.push({
         id:'w'+w, cells, bars,
+        occasionWashes: occasionCols.map(col => ({col, style: `position:absolute;top:0;bottom:0;left:calc(${col}/7*100%);width:calc(1/7*100%);background:oklch(94% 0.045 85);`})),
         hasToday: todayIdx !== -1,
         todayBgStyle: todayIdx !== -1 ? `position:absolute;top:0;bottom:0;left:calc(${todayIdx}/7*100%);width:calc(1/7*100%);background:oklch(96% 0.035 45);` : '',
         gridLayerStyle:`position:absolute;inset:0;display:grid;grid-template-columns:repeat(7,1fr);`,
@@ -1233,9 +1320,23 @@ class Component extends DCLogic {
     const fieldLabelStyle = 'display:flex;flex-direction:column;gap:6px;font-size:12.5px;font-weight:700;color:oklch(40% 0.02 50);';
     const fieldInputStyle = 'font-size:14px;padding:10px 12px;border-radius:10px;border:1px solid oklch(88% 0.02 70);background:oklch(98% 0.005 70);color:oklch(28% 0.03 50);font-weight:600;';
 
-    // events sorted
-    const sortedEvents = [...s.events].sort((a,b)=> a.date.localeCompare(b.date));
-    const upcoming = sortedEvents.filter(e => e.date >= TODAY);
+    // expand annual occasions across the displayed calendar year, current year, and next
+    const occasionYears = Array.from(new Set([s.calYear, TODAY_Y, TODAY_Y+1]));
+    const expandedEvents = s.events.flatMap(e => e.annual ? this.occurrencesFor(e, occasionYears) : [e]);
+
+    // events sorted — for annual occasions, only their single nearest upcoming occurrence should appear in Upcoming
+    const seenAnnualIds = new Set();
+    const upcomingDedup = [...expandedEvents]
+      .filter(e => e.date >= TODAY)
+      .sort((a,b)=> a.date.localeCompare(b.date))
+      .filter(e => {
+        if (!e.annual) return true;
+        if (seenAnnualIds.has(e.id)) return false;
+        seenAnnualIds.add(e.id);
+        return true;
+      });
+    const sortedEvents = [...expandedEvents].sort((a,b)=> a.date.localeCompare(b.date));
+    const upcoming = upcomingDedup;
     const mkEv = (ev) => {
       const sd = this.fmtShortDateWithDay(ev.date);
       const wx = this.weatherForDate(ev.date);
@@ -1243,7 +1344,7 @@ class Component extends DCLogic {
       const isMultiDay = ev.endDate && ev.endDate !== ev.date;
       const dateDisplay = isMultiDay ? `${this.fmtShortDate(ev.date)} – ${this.fmtShortDate(ev.endDate)}` : sd.text;
       const timeDisplay = ev.endTime ? `${this.formatTime12h(ev.time)||'?'} – ${this.formatTime12h(ev.endTime)}` : this.formatTime12h(ev.time);
-      return {...ev, shortDate:dateDisplay, timeDisplay, shortDateColor: sd.isWeekend?'oklch(58% 0.18 25)':'oklch(64% 0.13 55)', hasWeather: !!wx, weatherIcon: wx?wx.icon:'', weatherTemp: wx?wx.tempStr:'', personBadgeStyle:`font-size:11px;font-weight:700;padding:1px 8px;border-radius:6px;background:${pc.bg};color:${pc.text};display:inline-block;`, onEdit:()=>this.editEvent(ev), onDelete:()=>this.deleteEvent(ev.id)};
+      return {...ev, occasionIcon: ev.annual ? this.occasionIconFor(ev.occasionType)+' ' : '', shortDate:dateDisplay, timeDisplay, hasMeta: !!(timeDisplay || ev.person), shortDateColor: sd.isWeekend?'oklch(58% 0.18 25)':'oklch(64% 0.13 55)', hasWeather: !!wx, weatherIcon: wx?wx.icon:'', weatherTemp: wx?wx.tempStr:'', personBadgeStyle:`font-size:11px;font-weight:700;padding:1px 8px;border-radius:6px;background:${pc.bg};color:${pc.text};display:inline-block;`, onEdit:()=>this.editEvent(ev), onDelete:()=>this.deleteEvent(ev.id)};
     };
     const upcomingPreview = upcoming.slice(0,4).map(mkEv);
     const upcomingFull = upcoming.slice(0,8).map(mkEv);
@@ -1568,10 +1669,31 @@ class Component extends DCLogic {
     const accountCards = s.accounts.map(mkAcc);
 
     // calendar grid
-    const calWeeks = this.buildCalendarWeeks(s.calYear, s.calMonth, s.events, (ev)=>this.editEvent(ev), (date)=>this.openDayDetail(date));
+    const calWeeks = this.buildCalendarWeeks(s.calYear, s.calMonth, expandedEvents, (ev)=>this.editEvent(ev), (date)=>this.openDayDetail(date));
+
+    // occasions list: next occurrence per annual event, nearest first
+    const annualEvents = s.events.filter(e => e.annual);
+    const occasionRows = annualEvents.map(ev => {
+      const nextOccs = this.occurrencesFor(ev, [TODAY_Y, TODAY_Y+1]).filter(o => o.date >= TODAY).sort((a,b)=>a.date.localeCompare(b.date));
+      const next = nextOccs[0];
+      if (!next) return null;
+      const d = new Date(next.date+'T00:00:00');
+      const diffDays = Math.round((d - new Date(TODAY+'T00:00:00')) / 86400000);
+      let whenLabel;
+      whenLabel = diffDays === 0 ? 'today' : `in ${diffDays} day${diffDays===1?'':'s'}`;
+      const hasYears = next.yearsSince != null;
+      const yearsLabel = ev.occasionType==='birthday' ? `turns ${next.yearsSince}` : `${next.yearsSince} years`;
+      return {
+        id: ev.id, title: ev.title, icon: this.occasionIconFor(ev.occasionType),
+        dateLabel: `${MONTHS[d.getMonth()]} ${d.getDate()}`, whenLabel, hasYears, yearsLabel,
+        sortKey: next.date,
+        onEdit: () => this.editOccasion(ev),
+      };
+    }).filter(Boolean).sort((a,b)=>a.sortKey.localeCompare(b.sortKey));
+    const noOccasions = occasionRows.length === 0;
 
     const modal = s.modal;
-    const modalTitleMap = {event:'Event', transaction:'Transaction', category:'Budget Category', account:'Account'};
+    const modalTitleMap = {event:'Event', transaction:'Transaction', category:'Budget Category', account:'Account', occasion:'Occasion'};
 
     const nowMonth = bMonth, nowYear = bYear;
     const buildDetail = (catNames, editFn) => {
@@ -1611,13 +1733,15 @@ class Component extends DCLogic {
     };
     let dayDetail = {};
     if (modal?.type === 'dayDetail') {
-      const dayEvents = s.events.filter(e => modal.date >= e.date && modal.date <= (e.endDate||e.date));
+      const dayEvents = expandedEvents.filter(e => modal.date >= e.date && modal.date <= (e.endDate||e.date))
+        .sort((a,b)=> (b.annual?1:0) - (a.annual?1:0));
       dayDetail = {
         events: dayEvents.map(ev => {
           const pc = this.personColors(ev.person);
           const wx = this.weatherForDate(modal.date);
-          const timeDisplay = ev.endTime ? `${this.formatTime12h(ev.time)||'?'} – ${this.formatTime12h(ev.endTime)}` : this.formatTime12h(ev.time);
-          return {...ev, timeDisplay, hasWeather: !!wx, weatherIcon: wx?wx.icon:'', weatherTemp: wx?wx.tempStr:'', personBadgeStyle:`font-size:11px;font-weight:700;padding:1px 8px;border-radius:6px;background:${pc.bg};color:${pc.text};display:inline-block;`, onEdit:()=>this.editEvent(ev), onDelete:()=>this.confirmDeleteEvent(ev.id)};
+          const timeDisplay = ev.annual ? '' : (ev.endTime ? `${this.formatTime12h(ev.time)||'?'} – ${this.formatTime12h(ev.endTime)}` : this.formatTime12h(ev.time));
+          const yrsLabel = (ev.annual && ev.yearsSince != null) ? ` (${ev.yearsSince})` : '';
+          return {...ev, title: (ev.annual ? this.occasionIconFor(ev.occasionType)+' ' : '') + ev.title + yrsLabel, timeDisplay, hasWeather: !!wx, weatherIcon: wx?wx.icon:'', weatherTemp: wx?wx.tempStr:'', personBadgeStyle:`font-size:11px;font-weight:700;padding:1px 8px;border-radius:6px;background:${pc.bg};color:${pc.text};display:inline-block;`, onEdit:()=>this.editEvent(ev), onDelete:()=>this.confirmDeleteEvent(ev.id)};
         }),
         noEvents: dayEvents.length===0,
         onAddEvent: () => this.openAddEventForDate(modal.date),
@@ -1648,6 +1772,7 @@ class Component extends DCLogic {
       signOut: this.signOut,
 
       upcomingPreview, upcomingFull, noUpcoming: upcoming.length===0,
+      occasionRows, noOccasions, openAddOccasion:this.openAddOccasion,
       todoRows: [...s.todos].sort((a,b)=> (a.done===b.done) ? 0 : (a.done?1:-1)).map(td => ({
         ...td,
         textStyle: td.done ? 'text-decoration:line-through;color:oklch(60% 0.02 50);' : 'color:oklch(30% 0.02 50);',
@@ -1710,6 +1835,7 @@ class Component extends DCLogic {
       modalTitle: modal ? (modal.type==='categoryDetail' ? (s.categories.find(c=>c.id===modal.categoryId)?.name || 'Category') : modal.type==='groupDetail' ? modal.group : modal.type==='dayDetail' ? this.fmtShortDateWithDay(modal.date).text : `${modal.editing?'Edit':'Add'} ${modalTitleMap[modal.type]}`) : '',
       formError: s.formError,
       isEventModal: modal?.type==='event', isTransactionModal: modal?.type==='transaction', isCategoryModal: modal?.type==='category', isAccountModal: modal?.type==='account',
+      isOccasionModal: modal?.type==='occasion',
       isCategoryDetailModal: modal?.type==='categoryDetail' || modal?.type==='groupDetail', catDetail,
       isNotCategoryDetail: modal?.type!=='categoryDetail' && modal?.type!=='groupDetail' && modal?.type!=='dayDetail',
       isDayDetailModal: modal?.type==='dayDetail', dayDetail,
@@ -1759,6 +1885,16 @@ class Component extends DCLogic {
       onFormChange_password: (e)=>this.setFormField('password', e.target.value),
       onFormChange_url: (e)=>this.setFormField('url', e.target.value),
       onFormChange_payer: (e)=>this.setFormField('payer', e.target.value),
+      onFormChange_occasionType: (e)=>this.setFormField('occasionType', e.target.value),
+      onFormChange_yearUnknown: (e)=>{
+        const checked = e.target.checked;
+        this.setState(s=>{
+          if (!checked) return {form:{...s.form, yearUnknown:false}};
+          const d = new Date((s.form.date||TODAY)+'T00:00:00');
+          const newDate = `${TODAY_Y}-${P2(d.getMonth()+1)}-${P2(d.getDate())}`;
+          return {form:{...s.form, yearUnknown:true, date:newDate}};
+        });
+      },
       closeModal:this.closeModal, closeModalBg:this.closeModalBg, stopProp:this.stopProp,
       saveModalEntry:this.saveModalEntry, deleteModalEntry:this.deleteModalEntry,
     };
