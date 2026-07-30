@@ -39,6 +39,11 @@ firebase.initializeApp({
   @keyframes fadeIn{from{opacity:0}to{opacity:1}}
   @keyframes popIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
   @media (max-width: 820px) {
+    .income-bar-desktop { display: none !important; }
+    .income-bar-mobile { display: flex !important; }
+    .cal-wx-temp { display: none !important; }
+  }
+  @media (max-width: 820px) {
     .app-shell { flex-direction: column !important; }
     .app-nav {
       width: 100% !important; flex: none !important;
@@ -141,7 +146,9 @@ firebase.initializeApp({
               <div onClick="{{ ev.onEdit }}" style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid oklch(93% 0.015 70);cursor:pointer;">
                 <div style="min-width:70px;">
                   <div style="font-size:12px;font-weight:800;color:{{ ev.shortDateColor }};">{{ ev.shortDate }}</div>
-                  <div style="font-size:11px;color:oklch(50% 0.02 50);display:flex;align-items:center;gap:3px;">{{ ev.weatherIcon }} {{ ev.weatherTemp }}</div>
+                  <sc-if value="{{ ev.hasWeather }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size:11px;color:oklch(50% 0.02 50);display:flex;align-items:center;gap:3px;">{{ ev.weatherIcon }} {{ ev.weatherTemp }}</div>
+                  </sc-if>
                 </div>
                 <div style="flex:1;min-width:0;">
                   <div style="font-weight:700;font-size:14px;">{{ ev.title }}</div>
@@ -269,6 +276,9 @@ firebase.initializeApp({
                     <sc-for list="{{ week.cells }}" as="cell" hint-placeholder-count="7">
                       <div style="{{ cell.numWrapStyle }}" onClick="{{ cell.onOpenDay }}">
                         <div style="{{ cell.dayNumStyle }}">{{ cell.dayNum }}</div>
+                        <sc-if value="{{ cell.hasWeather }}" hint-placeholder-val="{{ false }}">
+                          <div style="font-size:9.5px;color:oklch(50% 0.02 50);height:20px;display:flex;align-items:center;">{{ cell.weatherIcon }}<span class="cal-wx-temp"> {{ cell.weatherTemp }}</span></div>
+                        </sc-if>
                       </div>
                     </sc-for>
                   </div>
@@ -288,7 +298,9 @@ firebase.initializeApp({
               <div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid oklch(93% 0.015 70);">
                 <div style="min-width:70px;">
                   <div style="font-size:12px;font-weight:800;color:{{ ev.shortDateColor }};">{{ ev.shortDate }}</div>
-                  <div style="font-size:11px;color:oklch(50% 0.02 50);display:flex;align-items:center;gap:3px;">{{ ev.weatherIcon }} {{ ev.weatherTemp }}</div>
+                  <sc-if value="{{ ev.hasWeather }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size:11px;color:oklch(50% 0.02 50);display:flex;align-items:center;gap:3px;">{{ ev.weatherIcon }} {{ ev.weatherTemp }}</div>
+                  </sc-if>
                 </div>
                 <div style="flex:1;min-width:0;cursor:pointer;" onClick="{{ ev.onEdit }}">
                   <div style="font-weight:700;font-size:14px;">{{ ev.title }}</div>
@@ -298,6 +310,7 @@ firebase.initializeApp({
               </div>
             </sc-for>
           </div>
+          <div style="margin-top:10px;font-size:11px;color:oklch(60% 0.02 50);">Weather by <a href="https://open-meteo.com/" target="_blank" rel="noopener" style="color:inherit;">Open-Meteo</a></div>
         </div>
 
         <div style="background:oklch(99% 0.008 70);border:1px solid oklch(90% 0.02 70);border-radius:18px;padding:22px;margin-top:24px;">
@@ -359,11 +372,44 @@ firebase.initializeApp({
             <div style="font-size:12.5px;font-weight:700;letter-spacing:0.02em;color:oklch(45% 0.11 55);background:oklch(93% 0.03 60);display:inline-block;padding:4px 10px;border-radius:7px;">Total</div>
             <div style="font-size:13px;font-weight:700;color:oklch(50% 0.02 50);">Income: ${{ totalIncomeStr }}</div>
           </div>
-          <div style="height:26px;border-radius:8px;background:oklch(92% 0.02 70);overflow:hidden;position:relative;">
-            <div style="{{ incomeVsSpentBarStyle }}"></div>
-            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:11.5px;font-weight:700;">
-              <span style="color:oklch(35% 0.02 50);">${{ totalSpentStr }} spent</span>
-              <span style="color:{{ remainingColor }};">${{ remainingStr }} {{ remainingLabel }}</span>
+          <div style="height:34px;border-radius:10px;background:oklch(92% 0.02 70);overflow:hidden;position:relative;" class="income-bar-desktop">
+            <sc-if value="{{ incomeBar.mirrored }}" hint-placeholder-val="{{ false }}">
+              <div style="{{ incomeBar.jihoonFillStyle }}"></div>
+              <div style="{{ incomeBar.youlimFillStyle }}"></div>
+              <div style="{{ incomeBar.dividerStyle }}"></div>
+              <div style="{{ incomeBar.jihoonSpentLabelStyle }}">{{ incomeBar.jihoonSpentLabel }}</div>
+              <div style="{{ incomeBar.youlimSpentLabelStyle }}">{{ incomeBar.youlimSpentLabel }}</div>
+              <div style="{{ incomeBar.jihoonInfoStyle }}">
+                <div>{{ incomeBar.jihoonIncomeStr }}</div>
+                <div>{{ incomeBar.jihoonRemainStr }}</div>
+              </div>
+              <div style="{{ incomeBar.youlimInfoStyle }}">
+                <div>{{ incomeBar.youlimIncomeStr }}</div>
+                <div>{{ incomeBar.youlimRemainStr }}</div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ incomeBar.stacked }}" hint-placeholder-val="{{ false }}">
+              <div style="{{ incomeBar.jihoonFillStyle }}"></div>
+              <div style="position:absolute;inset:0;display:flex;align-items:center;padding:0 10px;font-size:11px;font-weight:700;{{ incomeBar.jihoonTextStyle }}">{{ incomeBar.jihoonLabel }}</div>
+            </sc-if>
+            <sc-if value="{{ incomeBar.empty }}" hint-placeholder-val="{{ true }}">
+              <div style="height:100%;width:0%;background:oklch(60% 0.12 145);"></div>
+            </sc-if>
+          </div>
+          <sc-if value="{{ incomeBar.stacked }}" hint-placeholder-val="{{ false }}">
+            <div style="height:34px;border-radius:10px;background:oklch(92% 0.02 70);overflow:hidden;position:relative;margin-top:6px;" class="income-bar-desktop">
+              <div style="{{ incomeBar.youlimFillStyle }}"></div>
+              <div style="position:absolute;inset:0;display:flex;align-items:center;padding:0 10px;font-size:11px;font-weight:700;{{ incomeBar.youlimTextStyle }}">{{ incomeBar.youlimLabel }}</div>
+            </div>
+          </sc-if>
+          <div class="income-bar-mobile" style="display:none;flex-direction:column;gap:6px;">
+            <div style="height:28px;border-radius:8px;background:oklch(92% 0.02 70);overflow:hidden;position:relative;">
+              <div style="{{ incomeBar.mobile.jihoonFillStyle }}"></div>
+              <div style="position:absolute;inset:0;display:flex;align-items:center;padding:0 10px;font-size:11px;font-weight:700;{{ incomeBar.mobile.jihoonTextStyle }}">{{ incomeBar.mobile.jihoonLabel }}</div>
+            </div>
+            <div style="height:28px;border-radius:8px;background:oklch(92% 0.02 70);overflow:hidden;position:relative;">
+              <div style="{{ incomeBar.mobile.youlimFillStyle }}"></div>
+              <div style="position:absolute;inset:0;display:flex;align-items:center;padding:0 10px;font-size:11px;font-weight:700;{{ incomeBar.mobile.youlimTextStyle }}">{{ incomeBar.mobile.youlimLabel }}</div>
             </div>
           </div>
         </div>
@@ -382,14 +428,25 @@ firebase.initializeApp({
                 <sc-if value="{{ grp.expanded }}" hint-placeholder-val="{{ true }}">
                 <sc-for list="{{ grp.items }}" as="cat" hint-placeholder-count="3">
                   <div style="padding:12px 0;border-top:1px solid oklch(93% 0.015 70);cursor:pointer;" onClick="{{ cat.onOpenDetail }}">
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
-                      <div style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;min-width:0;overflow:hidden;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:3px;">
+                      <div style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;min-width:0;overflow:hidden;flex:1;">
                         <span style="{{ cat.dotStyle }}"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ cat.name }}</span>
                       </div>
                       <div style="font-size:12.5px;color:oklch(50% 0.02 50);flex:none;">${{ cat.spentStr }}</div>
                     </div>
-                    <div style="height:7px;border-radius:5px;background:oklch(92% 0.02 70);overflow:hidden;">
-                      <div style="{{ cat.barStyle }}"></div>
+                    <sc-if value="{{ cat.hasSplit }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:flex;gap:10px;margin-bottom:4px;">
+                        <sc-if value="{{ cat.hasJihoonSplit }}" hint-placeholder-val="{{ false }}">
+                          <span style="font-size:11px;font-weight:700;color:{{ cat.jihoonSplitColor }};">{{ cat.jihoonSplitStr }}</span>
+                        </sc-if>
+                        <sc-if value="{{ cat.hasYoulimSplit }}" hint-placeholder-val="{{ false }}">
+                          <span style="font-size:11px;font-weight:700;color:{{ cat.youlimSplitColor }};">{{ cat.youlimSplitStr }}</span>
+                        </sc-if>
+                      </div>
+                    </sc-if>
+                    <div style="height:10px;border-radius:5px;background:oklch(92% 0.02 70);overflow:hidden;position:relative;">
+                      <div style="{{ cat.jihoonBarStyle }}"></div>
+                      <div style="{{ cat.youlimBarStyle }}"></div>
                     </div>
                   </div>
                 </sc-for>
@@ -412,7 +469,7 @@ firebase.initializeApp({
               </select>
             </div>
             <sc-for list="{{ transactionRows }}" as="tx" hint-placeholder-count="6">
-              <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid oklch(93% 0.015 70);">
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 8px;margin:0 -8px;border-radius:8px;background:{{ tx.payerTint }};border-top:1px solid oklch(93% 0.015 70);">
                 <span style="{{ tx.dotStyle }}"></span>
                 <div style="flex:1;min-width:0;cursor:pointer;" onClick="{{ tx.onEdit }}">
                   <div style="font-weight:700;font-size:13.5px;">{{ tx.desc }}</div>
@@ -542,10 +599,16 @@ firebase.initializeApp({
 
       <sc-if value="{{ isTransactionModal }}" hint-placeholder-val="{{ false }}">
         <div style="display:flex;flex-direction:column;gap:12px;">
-          <label style="{{ fieldLabelStyle }}">Type<select style="{{ fieldInputStyle }}" value="{{ form.type }}" onChange="{{ onFormChange_type }}">
-            <option value="expense">Expense</option>
-            <option value="income">Income</option>
-          </select></label>
+          <div style="display:flex;gap:12px;">
+            <label style="{{ fieldLabelStyle }}flex:1;">Type<select style="{{ fieldInputStyle }}" value="{{ form.type }}" onChange="{{ onFormChange_type }}">
+              <option value="expense">Expense</option>
+              <option value="income">Income</option>
+            </select></label>
+            <label style="{{ fieldLabelStyle }}flex:1;">Paid by<select style="{{ fieldInputStyle }}" value="{{ form.payer }}" onChange="{{ onFormChange_payer }}">
+              <option value="Jihoon">Jihoon</option>
+              <option value="Youlim">Youlim</option>
+            </select></label>
+          </div>
           <label style="{{ fieldLabelStyle }}">Category<sc-if value="{{ isIncomeForm }}" hint-placeholder-val="{{ false }}"><input style="{{ fieldInputStyle }}" value="N/A for income" disabled="{{ true }}"></input></sc-if><sc-if value="{{ isExpenseForm }}" hint-placeholder-val="{{ true }}"><select style="{{ fieldInputStyle }}" value="{{ form.category }}" onChange="{{ onFormChange_category }}">
             <sc-for list="{{ categoryGroups }}" as="g" hint-placeholder-count="2">
               <optgroup label="{{ g.group }}">
@@ -586,21 +649,27 @@ firebase.initializeApp({
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
             <div style="background:oklch(97% 0.015 70);border-radius:12px;padding:12px;">
               <div style="font-size:11px;color:oklch(50% 0.02 50);">This Month</div>
-              <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:16px;">${{ catDetail.thisMonthStr }}</div>
+              <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:16px;color:{{ jc.text }};">${{ catDetail.thisMonthJihoonStr }}</div>
+              <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:16px;color:{{ yc.text }};">${{ catDetail.thisMonthYoulimStr }}</div>
+              <div style="font-size:11px;color:oklch(50% 0.02 50);margin-top:4px;">Total ${{ catDetail.thisMonthStr }}</div>
             </div>
             <div style="background:oklch(97% 0.015 70);border-radius:12px;padding:12px;">
               <div style="font-size:11px;color:oklch(50% 0.02 50);">YTD</div>
-              <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:16px;">${{ catDetail.ytdStr }}</div>
+              <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:16px;color:{{ jc.text }};">${{ catDetail.ytdJihoonStr }}</div>
+              <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:16px;color:{{ yc.text }};">${{ catDetail.ytdYoulimStr }}</div>
+              <div style="font-size:11px;color:oklch(50% 0.02 50);margin-top:4px;">Total ${{ catDetail.ytdStr }}</div>
             </div>
             <div style="background:oklch(97% 0.015 70);border-radius:12px;padding:12px;">
               <div style="font-size:11px;color:oklch(50% 0.02 50);">Year Projected</div>
-              <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:16px;">${{ catDetail.projectedStr }}</div>
+              <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:16px;color:{{ jc.text }};">${{ catDetail.projectedJihoonStr }}</div>
+              <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:16px;color:{{ yc.text }};">${{ catDetail.projectedYoulimStr }}</div>
+              <div style="font-size:11px;color:oklch(50% 0.02 50);margin-top:4px;">Total ${{ catDetail.projectedStr }}</div>
             </div>
           </div>
           <div>
             <div style="font-size:12.5px;font-weight:700;color:oklch(40% 0.02 50);margin-bottom:8px;">This month's transactions</div>
             <sc-for list="{{ catDetail.transactions }}" as="tx" hint-placeholder-count="3">
-              <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid oklch(93% 0.015 70);">
+              <div style="display:flex;align-items:center;gap:10px;padding:9px 8px;margin:0 -8px;border-radius:8px;background:{{ tx.payerTint }};border-top:1px solid oklch(93% 0.015 70);">
                 <div style="flex:1;min-width:0;cursor:pointer;" onClick="{{ tx.onEdit }}">
                   <div style="font-weight:700;font-size:13.5px;">{{ tx.desc }}</div>
                   <div style="font-size:12px;color:oklch(50% 0.02 50);">{{ tx.dateLabel }}{{ tx.freqSuffix }}</div>
@@ -682,6 +751,7 @@ const YEAR_OPTIONS = [TODAY_Y-2, TODAY_Y-1, TODAY_Y, TODAY_Y+1, TODAY_Y+2, TODAY
 class Component extends DCLogic {
   state = {
     view: 'dashboard',
+    weather: null,
     chartHiddenCats: {},
     collapsedGroups: {'Bills & Subscriptions': true, 'Expenses': true},
     calYear: TODAY_Y, calMonth: TODAY_M,
@@ -706,6 +776,43 @@ class Component extends DCLogic {
     nextId: 100,
   };
 
+  loadWeather(){
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=45.28&longitude=-75.75&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=America%2FToronto&forecast_days=16')
+      .then(r => r.json())
+      .then(data => {
+        const d = data && data.daily;
+        if (!d || !Array.isArray(d.time)) return;
+        const lookup = {};
+        d.time.forEach((date, i) => {
+          const code = d.weather_code[i];
+          const high = d.temperature_2m_max[i];
+          if (date == null || code == null || high == null) return;
+          lookup[date] = {code, high};
+        });
+        this.setState({weather: lookup});
+      })
+      .catch(() => {});
+  }
+  weatherIconForCode(code){
+    if (code === 0) return '☀️';
+    if (code === 1 || code === 2) return '⛅';
+    if (code === 3) return '☁️';
+    if (code === 45 || code === 48) return '🌫️';
+    if (code >= 51 && code <= 57) return '🌦️';
+    if (code >= 61 && code <= 67) return '🌧️';
+    if (code >= 71 && code <= 77) return '🌨️';
+    if (code >= 80 && code <= 82) return '🌧️';
+    if (code === 85 || code === 86) return '🌨️';
+    if (code >= 95 && code <= 99) return '⛈️';
+    return null;
+  }
+  weatherForDate(dateStr){
+    const entry = this.state.weather && this.state.weather[dateStr];
+    if (!entry) return null;
+    const icon = this.weatherIconForCode(entry.code);
+    if (!icon) return null;
+    return {icon, tempStr: `${Math.round(entry.high)}°C`};
+  }
   genId(){
     const n = Math.max(this._idCounter ?? 0, this.state.nextId ?? 0) + 1;
     this._idCounter = n;
@@ -833,7 +940,7 @@ class Component extends DCLogic {
 
   openAddEvent = () => this.setState({modal:{type:'event',editing:null}, form:{title:'',date:TODAY,endDate:TODAY,time:'',endTime:'',person:'Both',location:'',note:''}, formError:null});
   openAddEventForDate = (date) => this.setState({modal:{type:'event',editing:null}, form:{title:'',date,endDate:date,time:'',endTime:'',person:'Both',location:'',note:''}, formError:null});
-  openAddTransaction = () => this.setState({modal:{type:'transaction',editing:null}, form:{desc:'',amount:'',type:'expense',frequency:'once',category:this.state.categories[0]?.name||'',date:TODAY,note:''}});
+  openAddTransaction = () => this.setState({modal:{type:'transaction',editing:null}, form:{desc:'',amount:'',type:'expense',frequency:'once',category:this.state.categories[0]?.name||'',date:TODAY,note:'',payer:'Jihoon'}});
   openAddCategory = () => this.setState({modal:{type:'category',editing:null}, form:{name:'',group:'Expenses'}});
   openAddAccount = () => this.setState({modal:{type:'account',editing:null}, form:{service:'',owner:'Jihoon',username:'',password:'',url:'',note:''}});
 
@@ -881,7 +988,7 @@ class Component extends DCLogic {
     const target = this.state.budgetYear*12 + this.state.budgetMonth;
     const resolvedAmount = this.baseAmountForTarget(tx, target);
     const resolvedFrequency = this.freqEntryForTarget(tx, target).frequency;
-    this.setState({modal:{type:'transaction',editing:tx.id}, form:{...tx, amount:resolvedAmount, frequency:resolvedFrequency}});
+    this.setState({modal:{type:'transaction',editing:tx.id}, form:{...tx, amount:resolvedAmount, frequency:resolvedFrequency, payer:tx.payer||'Jihoon'}});
   }
   editCategory(cat){ this.setState({modal:{type:'category',editing:cat.id}, form:{...cat}}); }
   editAccount(acc){ this.setState({modal:{type:'account',editing:acc.id}, form:{...acc}}); }
@@ -966,7 +1073,7 @@ class Component extends DCLogic {
         else frequencies.push({from: target, frequency: newFrequency});
         frequencies.sort((a,b)=>a.from-b.from);
       }
-      const entry = {id: editing || this.genId(), desc:f.desc||'Untitled', category:f.type==='income'?'':(f.category||''), amount:newAmount, type:f.type||'expense', frequency:newFrequency, date:f.date||TODAY, note:f.note||'', endsAt: existingTx?.endsAt, amounts, frequencies};
+      const entry = {id: editing || this.genId(), desc:f.desc||'Untitled', category:f.type==='income'?'':(f.category||''), amount:newAmount, type:f.type||'expense', frequency:newFrequency, date:f.date||TODAY, note:f.note||'', endsAt: existingTx?.endsAt, amounts, frequencies, payer:f.payer||'Jihoon'};
       this.setState(s => ({transactions: editing ? s.transactions.map(t=>t.id===editing?entry:t) : [...s.transactions, entry]}));
     } else if (type === 'category') {
       const entry = {id: editing || this.genId(), name:f.name||'Untitled', group:f.group||'Expenses'};
@@ -1062,10 +1169,12 @@ class Component extends DCLogic {
         const isToday = dateStr === TODAY;
         const dow = new Date(dateStr+'T00:00:00').getDay();
         const isWeekend = dow === 0 || dow === 6;
+        const wx = this.weatherForDate(dateStr);
         return {
           blank:false, id:dateStr, dayNum:d,
-          numWrapStyle:`padding:6px 6px 2px;min-height:22px;height:100%;background:transparent;border-radius:8px 8px 0 0;cursor:pointer;${col<6?'border-right:1px solid oklch(91% 0.015 70);':''}`,
+          numWrapStyle:`padding:6px 6px 2px;min-height:22px;height:100%;background:transparent;border-radius:8px 8px 0 0;cursor:pointer;display:flex;align-items:flex-start;gap:4px;${col<6?'border-right:1px solid oklch(91% 0.015 70);':''}`,
           dayNumStyle:`display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 4px;border-radius:6px;font-size:12px;font-weight:${isToday?'800':'700'};color:${isToday?'oklch(64% 0.15 45)':isWeekend?'oklch(58% 0.18 25)':'oklch(45% 0.02 50)'};background:${isToday?'oklch(88% 0.07 45)':'transparent'};`,
+          hasWeather: !!wx, weatherIcon: wx?wx.icon:'', weatherTemp: wx?wx.tempStr:'',
           onOpenDay: () => dayFn(dateStr),
         };
       });
@@ -1087,13 +1196,13 @@ class Component extends DCLogic {
           bars.push({
             id: ev.id+'-'+w,
             title: ev.title,
-            style: `position:absolute;left:calc(${colStart}/7*100% + 4px);width:calc(${(colEnd-colStart+1)}/7*100% - 8px);top:${22+rowIdx*21}px;height:17px;background:${pc.bg};color:${pc.text};border-radius:5px;font-size:10.5px;font-weight:700;padding:1px 6px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;pointer-events:auto;box-sizing:border-box;`,
+            style: `position:absolute;left:calc(${colStart}/7*100% + 4px);width:calc(${(colEnd-colStart+1)}/7*100% - 8px);top:${30+rowIdx*21}px;height:17px;background:${pc.bg};color:${pc.text};border-radius:5px;font-size:10.5px;font-weight:700;padding:1px 6px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;pointer-events:auto;box-sizing:border-box;`,
             onEdit: (e) => { e.stopPropagation(); editFn(ev); },
           });
         }
       }
       const maxRows = bars.length ? Math.max(...bars.map(b=>parseInt(b.style.match(/top:(\d+)px/)[1])/21))+1 : 0;
-      const totalHeight = Math.max(92, maxRows*21+4+22);
+      const totalHeight = Math.max(92, maxRows*21+4+30);
       const todayIdx = weekDays.findIndex(d=>d===TODAY);
       weeks.push({
         id:'w'+w, cells, bars,
@@ -1108,6 +1217,7 @@ class Component extends DCLogic {
   }
 
   renderVals(){
+    if (!this._weatherStarted) { this._weatherStarted = true; this.loadWeather(); }
     const s = this.state;
     const navBase = 'display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:11px;font-weight:700;font-size:14.5px;cursor:pointer;';
     const navOn = 'background:oklch(94% 0.04 45);color:oklch(64% 0.15 45);';
@@ -1126,25 +1236,14 @@ class Component extends DCLogic {
     // events sorted
     const sortedEvents = [...s.events].sort((a,b)=> a.date.localeCompare(b.date));
     const upcoming = sortedEvents.filter(e => e.date >= TODAY);
-    const WEATHER_ICONS = {
-      sun: '☀️', cloud: '☁️', rain: '🌧️', partly: '⛅',
-    };
-    const weatherForDate = (dateStr) => {
-      let hash = 0;
-      for (let i=0;i<dateStr.length;i++) hash = (hash*31 + dateStr.charCodeAt(i)) >>> 0;
-      const kinds = ['sun','partly','cloud','rain'];
-      const kind = kinds[hash % kinds.length];
-      const temp = 18 + (hash % 15); // 18-32 C
-      return {icon: WEATHER_ICONS[kind], tempStr: `${temp}°C`};
-    };
     const mkEv = (ev) => {
       const sd = this.fmtShortDateWithDay(ev.date);
-      const wx = weatherForDate(ev.date);
+      const wx = this.weatherForDate(ev.date);
       const pc = this.personColors(ev.person);
       const isMultiDay = ev.endDate && ev.endDate !== ev.date;
       const dateDisplay = isMultiDay ? `${this.fmtShortDate(ev.date)} – ${this.fmtShortDate(ev.endDate)}` : sd.text;
       const timeDisplay = ev.endTime ? `${this.formatTime12h(ev.time)||'?'} – ${this.formatTime12h(ev.endTime)}` : this.formatTime12h(ev.time);
-      return {...ev, shortDate:dateDisplay, timeDisplay, shortDateColor: sd.isWeekend?'oklch(58% 0.18 25)':'oklch(64% 0.13 55)', weatherIcon: wx.icon, weatherTemp: wx.tempStr, personBadgeStyle:`font-size:11px;font-weight:700;padding:1px 8px;border-radius:6px;background:${pc.bg};color:${pc.text};display:inline-block;`, onEdit:()=>this.editEvent(ev), onDelete:()=>this.deleteEvent(ev.id)};
+      return {...ev, shortDate:dateDisplay, timeDisplay, shortDateColor: sd.isWeekend?'oklch(58% 0.18 25)':'oklch(64% 0.13 55)', hasWeather: !!wx, weatherIcon: wx?wx.icon:'', weatherTemp: wx?wx.tempStr:'', personBadgeStyle:`font-size:11px;font-weight:700;padding:1px 8px;border-radius:6px;background:${pc.bg};color:${pc.text};display:inline-block;`, onEdit:()=>this.editEvent(ev), onDelete:()=>this.deleteEvent(ev.id)};
     };
     const upcomingPreview = upcoming.slice(0,4).map(mkEv);
     const upcomingFull = upcoming.slice(0,8).map(mkEv);
@@ -1275,6 +1374,63 @@ class Component extends DCLogic {
     const totalBudget = 0;
     const net = totalIncome - totalSpent;
 
+    // per-payer income bar
+    const payerOf = (t) => t.payer || 'Jihoon';
+    const jc = this.personColors('Jihoon'), yc = this.personColors('Youlim');
+    let jihoonIncome=0, youlimIncome=0, jihoonSpentAmt=0, youlimSpentAmt=0;
+    for (const t of s.transactions) {
+      const amt = monthContribution(t, bYear, bMonth);
+      if (!amt) continue;
+      const p = payerOf(t);
+      if (t.type === 'income') { if (p==='Youlim') youlimIncome+=amt; else jihoonIncome+=amt; }
+      else { if (p==='Youlim') youlimSpentAmt+=amt; else jihoonSpentAmt+=amt; }
+    }
+    const householdIncome2 = jihoonIncome+youlimIncome;
+    const jOver = jihoonSpentAmt > jihoonIncome, yOver = youlimSpentAmt > youlimIncome;
+    // mobile/stacked view figures — always computed, scaled to household income
+    const jPctFull = householdIncome2>0 ? Math.min(100,(jihoonSpentAmt/householdIncome2)*100) : (jihoonSpentAmt>0?100:0);
+    const yPctFull = householdIncome2>0 ? Math.min(100,(youlimSpentAmt/householdIncome2)*100) : (youlimSpentAmt>0?100:0);
+    const incomeBarMobile = {
+      jihoonFillStyle: `height:100%;width:${jPctFull}%;background:${jOver?'oklch(85% 0.08 25)':jc.bg};border-radius:8px;`,
+      youlimFillStyle: `height:100%;width:${yPctFull}%;background:${yOver?'oklch(85% 0.08 25)':yc.bg};border-radius:8px;`,
+      jihoonLabel: `Jihoon — $${this.fmtMoney(jihoonSpentAmt)} ${jOver?'over':'of'} $${this.fmtMoney(jihoonIncome)}`,
+      youlimLabel: `Youlim — $${this.fmtMoney(youlimSpentAmt)} ${yOver?'over':'of'} $${this.fmtMoney(youlimIncome)}`,
+      jihoonTextStyle: `color:${jc.text};`, youlimTextStyle: `color:${yc.text};`,
+    };
+    let incomeBar;
+    if (householdIncome2 <= 0) {
+      incomeBar = { empty:true, mirrored:false, stacked:false };
+    } else if (jihoonIncome>0 && youlimIncome>0) {
+      const dividerPct = (jihoonIncome/householdIncome2)*100;
+      const jSpentPct = Math.min(dividerPct, (jihoonSpentAmt/householdIncome2)*100);
+      const ySpentPct = Math.min(100-dividerPct, (youlimSpentAmt/householdIncome2)*100);
+      incomeBar = {
+        mirrored:true, empty:false, stacked:false,
+        jihoonFillStyle: `position:absolute;left:0;top:0;bottom:0;width:${jSpentPct}%;background:${jc.bg};`,
+        youlimFillStyle: `position:absolute;right:0;top:0;bottom:0;width:${ySpentPct}%;background:${yc.bg};`,
+        dividerStyle: `position:absolute;left:${dividerPct}%;top:0;bottom:0;width:2px;background:oklch(78% 0.01 70);transform:translateX(-1px);`,
+        jihoonSpentLabelStyle: `position:absolute;left:8px;top:0;bottom:0;display:flex;align-items:center;font-size:10.5px;font-weight:700;color:${jc.text};`,
+        jihoonSpentLabel: `$${this.fmtMoney(jihoonSpentAmt)}`,
+        youlimSpentLabelStyle: `position:absolute;right:8px;top:0;bottom:0;display:flex;align-items:center;font-size:10.5px;font-weight:700;color:${yc.text};`,
+        youlimSpentLabel: `$${this.fmtMoney(youlimSpentAmt)}`,
+        jihoonInfoStyle: `position:absolute;right:calc(${100-dividerPct}% + 6px);top:0;bottom:0;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;font-size:9.5px;font-weight:700;color:${jc.text};line-height:1.3;`,
+        jihoonIncomeStr: `$${this.fmtMoney(jihoonIncome)}`,
+        jihoonRemainStr: jOver ? `$${this.fmtMoney(jihoonSpentAmt-jihoonIncome)} over` : `$${this.fmtMoney(jihoonIncome-jihoonSpentAmt)} left`,
+        youlimInfoStyle: `position:absolute;left:calc(${dividerPct}% + 6px);top:0;bottom:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;font-size:9.5px;font-weight:700;color:${yc.text};line-height:1.3;`,
+        youlimIncomeStr: `$${this.fmtMoney(youlimIncome)}`,
+        youlimRemainStr: yOver ? `$${this.fmtMoney(youlimSpentAmt-youlimIncome)} over` : `$${this.fmtMoney(youlimIncome-youlimSpentAmt)} left`,
+      };
+    } else {
+      incomeBar = {
+        mirrored:false, empty:false, stacked:true,
+        jihoonFillStyle: `height:100%;width:${jPctFull}%;background:${jc.bg};border-radius:8px;`,
+        youlimFillStyle: `height:100%;width:${yPctFull}%;background:${yc.bg};border-radius:8px;`,
+        jihoonLabel: incomeBarMobile.jihoonLabel, youlimLabel: incomeBarMobile.youlimLabel,
+        jihoonTextStyle: incomeBarMobile.jihoonTextStyle, youlimTextStyle: incomeBarMobile.youlimTextStyle,
+      };
+    }
+    incomeBar.mobile = incomeBarMobile;
+
     // monthly chart (year view for selected budget year)
     const billsCatNames = s.categories.filter(c=>c.group==='Bills & Subscriptions').map(c=>c.name);
     const expenseCatNames = s.categories.filter(c=>c.group==='Expenses').map(c=>c.name);
@@ -1336,10 +1492,23 @@ class Component extends DCLogic {
       const spent = spentByCat[cat.name] || 0;
       const pct = totalIncome > 0 ? Math.min(100, (spent/totalIncome)*100) : 0;
       const color = CAT_COLORS[i % CAT_COLORS.length];
+      let catJihoon = 0, catYoulim = 0;
+      for (const t of s.transactions) {
+        if (t.type!=='expense' || t.category!==cat.name) continue;
+        const amt = monthContribution(t, bYear, bMonth);
+        if (!amt) continue;
+        if (payerOf(t)==='Youlim') catYoulim += amt; else catJihoon += amt;
+      }
+      const jPct = totalIncome>0 ? Math.min(pct, (catJihoon/totalIncome)*100) : 0;
+      const yPct = totalIncome>0 ? Math.min(pct-jPct, (catYoulim/totalIncome)*100) : 0;
       return {
         ...cat, spentStr:this.fmtMoney(spent),
         dotStyle:`width:9px;height:9px;border-radius:50%;background:${color};display:inline-block;`,
-        barStyle:`height:100%;width:${pct}%;background:${color};border-radius:5px;`,
+        jihoonBarStyle:`position:absolute;left:0;top:0;bottom:0;width:${jPct}%;background:${jc.bg};`,
+        youlimBarStyle:`position:absolute;left:${jPct}%;top:0;bottom:0;width:${yPct}%;background:${yc.bg};`,
+        hasJihoonSplit: catJihoon>0, hasYoulimSplit: catYoulim>0, hasSplit: catJihoon>0 || catYoulim>0,
+        jihoonSplitStr: `J $${this.fmtMoney(catJihoon)}`, youlimSplitStr: `Y $${this.fmtMoney(catYoulim)}`,
+        jihoonSplitColor: jc.text, youlimSplitColor: yc.text,
         onEdit: () => this.editCategory(cat),
         onOpenDetail: () => this.openCategoryDetail(cat),
       };
@@ -1375,6 +1544,7 @@ class Component extends DCLogic {
       freqSuffix: (()=>{ const rf = this.freqEntryForTarget(tx, bYear*12+bMonth).frequency; return FREQ_LABEL[rf] ? ' · '+FREQ_LABEL[rf] : ''; })(),
       dotStyle:`width:8px;height:8px;border-radius:50%;background:${catColorMap[tx.category] || 'oklch(60% 0.02 50)'};display:inline-block;flex:none;`,
       hasNote: !!tx.note,
+      payerTint: this.personColors(payerOf(tx)).bg,
       amountStr: (tx.type==='income'?'+':'-')+'$'+this.fmtMoney(this.baseAmountForTarget(tx, bYear*12+bMonth)),
       amountColor: tx.type==='income' ? 'oklch(55% 0.12 145)' : 'oklch(40% 0.02 50)',
       onEdit: () => this.editTransaction(tx),
@@ -1408,16 +1578,32 @@ class Component extends DCLogic {
       const catTx = s.transactions.filter(t => catNames.includes(t.category));
       const thisMonthTx = catTx.filter(t => t.type==='expense' && appliesToMonth(t, nowYear, nowMonth));
       const thisMonth = thisMonthTx.reduce((sum,t)=>sum+monthlyAmt(t, nowYear*12+nowMonth), 0);
-      let ytd = 0, projected = 0;
-      for (let m=0; m<=nowMonth; m++) ytd += catTx.filter(t=>t.type==='expense').reduce((sum,t)=> sum + monthContribution(t, nowYear, m), 0);
-      for (let m=0; m<=11; m++) projected += catTx.filter(t=>t.type==='expense').reduce((sum,t)=> sum + monthContribution(t, nowYear, m), 0);
+      const thisMonthJihoon = thisMonthTx.filter(t=>payerOf(t)!=='Youlim').reduce((sum,t)=>sum+monthlyAmt(t, nowYear*12+nowMonth), 0);
+      const thisMonthYoulim = thisMonthTx.filter(t=>payerOf(t)==='Youlim').reduce((sum,t)=>sum+monthlyAmt(t, nowYear*12+nowMonth), 0);
+      let ytd = 0, projected = 0, ytdJihoon = 0, ytdYoulim = 0, projectedJihoon = 0, projectedYoulim = 0;
+      for (let m=0; m<=nowMonth; m++) {
+        const expTx = catTx.filter(t=>t.type==='expense');
+        ytd += expTx.reduce((sum,t)=> sum + monthContribution(t, nowYear, m), 0);
+        ytdJihoon += expTx.filter(t=>payerOf(t)!=='Youlim').reduce((sum,t)=> sum + monthContribution(t, nowYear, m), 0);
+        ytdYoulim += expTx.filter(t=>payerOf(t)==='Youlim').reduce((sum,t)=> sum + monthContribution(t, nowYear, m), 0);
+      }
+      for (let m=0; m<=11; m++) {
+        const expTx = catTx.filter(t=>t.type==='expense');
+        projected += expTx.reduce((sum,t)=> sum + monthContribution(t, nowYear, m), 0);
+        projectedJihoon += expTx.filter(t=>payerOf(t)!=='Youlim').reduce((sum,t)=> sum + monthContribution(t, nowYear, m), 0);
+        projectedYoulim += expTx.filter(t=>payerOf(t)==='Youlim').reduce((sum,t)=> sum + monthContribution(t, nowYear, m), 0);
+      }
       return {
         thisMonthStr: this.fmtMoney(thisMonth), ytdStr: this.fmtMoney(ytd), projectedStr: this.fmtMoney(projected),
+        thisMonthJihoonStr: this.fmtMoney(thisMonthJihoon), thisMonthYoulimStr: this.fmtMoney(thisMonthYoulim),
+        ytdJihoonStr: this.fmtMoney(ytdJihoon), ytdYoulimStr: this.fmtMoney(ytdYoulim),
+        projectedJihoonStr: this.fmtMoney(projectedJihoon), projectedYoulimStr: this.fmtMoney(projectedYoulim),
         noTransactions: thisMonthTx.length===0,
         transactions: thisMonthTx.map(tx => ({
           ...tx, dateLabel:this.fmtShortDate(tx.date),
           freqSuffix: (()=>{ const rf = this.freqEntryForTarget(tx, nowYear*12+nowMonth).frequency; return FREQ_LABEL[rf] ? ' · '+FREQ_LABEL[rf] : ''; })(),
           amountStr: this.fmtMoney(monthlyAmt(tx, nowYear*12+nowMonth)),
+          payerTint: this.personColors(payerOf(tx)).bg,
           onEdit: () => this.editTransaction(tx),
         })),
         onEdit: editFn,
@@ -1429,8 +1615,9 @@ class Component extends DCLogic {
       dayDetail = {
         events: dayEvents.map(ev => {
           const pc = this.personColors(ev.person);
+          const wx = this.weatherForDate(modal.date);
           const timeDisplay = ev.endTime ? `${this.formatTime12h(ev.time)||'?'} – ${this.formatTime12h(ev.endTime)}` : this.formatTime12h(ev.time);
-          return {...ev, timeDisplay, personBadgeStyle:`font-size:11px;font-weight:700;padding:1px 8px;border-radius:6px;background:${pc.bg};color:${pc.text};display:inline-block;`, onEdit:()=>this.editEvent(ev), onDelete:()=>this.confirmDeleteEvent(ev.id)};
+          return {...ev, timeDisplay, hasWeather: !!wx, weatherIcon: wx?wx.icon:'', weatherTemp: wx?wx.tempStr:'', personBadgeStyle:`font-size:11px;font-weight:700;padding:1px 8px;border-radius:6px;background:${pc.bg};color:${pc.text};display:inline-block;`, onEdit:()=>this.editEvent(ev), onDelete:()=>this.confirmDeleteEvent(ev.id)};
         }),
         noEvents: dayEvents.length===0,
         onAddEvent: () => this.openAddEventForDate(modal.date),
@@ -1484,7 +1671,7 @@ class Component extends DCLogic {
       catChartSeries, catChartLegend, catChartGridLines,
       onToggleAllCatChart: this.onToggleAllCatChart,
       catChartAllLabel: s.categories.every(c => s.chartHiddenCats[c.id]) ? 'Select All' : 'Unselect All',
-      accountsPreview, accountCards, thisMonth,
+      accountsPreview, accountCards, thisMonth, incomeBar, jc, yc,
 
       calMonthLabel: `${MONTHS[s.calMonth]} ${s.calYear}`,
       weekdayLabels: WEEKDAYS.map((w,i)=>({label:w, color: (i===0||i===6) ? 'oklch(58% 0.18 25)' : 'oklch(55% 0.02 50)'})), calWeeks,
@@ -1571,6 +1758,7 @@ class Component extends DCLogic {
       onFormChange_username: (e)=>this.setFormField('username', e.target.value),
       onFormChange_password: (e)=>this.setFormField('password', e.target.value),
       onFormChange_url: (e)=>this.setFormField('url', e.target.value),
+      onFormChange_payer: (e)=>this.setFormField('payer', e.target.value),
       closeModal:this.closeModal, closeModalBg:this.closeModalBg, stopProp:this.stopProp,
       saveModalEntry:this.saveModalEntry, deleteModalEntry:this.deleteModalEntry,
     };
