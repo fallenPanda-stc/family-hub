@@ -41,6 +41,7 @@ firebase.initializeApp({
   @media (max-width: 820px) {
     .income-bar-desktop { display: none !important; }
     .income-bar-mobile { display: flex !important; }
+    .cal-wx-temp { display: none !important; }
   }
   @media (max-width: 820px) {
     .app-shell { flex-direction: column !important; }
@@ -276,7 +277,7 @@ firebase.initializeApp({
                       <div style="{{ cell.numWrapStyle }}" onClick="{{ cell.onOpenDay }}">
                         <div style="{{ cell.dayNumStyle }}">{{ cell.dayNum }}</div>
                         <sc-if value="{{ cell.hasWeather }}" hint-placeholder-val="{{ false }}">
-                          <div style="font-size:9.5px;color:oklch(50% 0.02 50);padding:1px 4px;">{{ cell.weatherIcon }} {{ cell.weatherTemp }}</div>
+                          <div style="font-size:9.5px;color:oklch(50% 0.02 50);height:20px;display:flex;align-items:center;">{{ cell.weatherIcon }}<span class="cal-wx-temp"> {{ cell.weatherTemp }}</span></div>
                         </sc-if>
                       </div>
                     </sc-for>
@@ -1171,7 +1172,7 @@ class Component extends DCLogic {
         const wx = this.weatherForDate(dateStr);
         return {
           blank:false, id:dateStr, dayNum:d,
-          numWrapStyle:`padding:6px 6px 2px;min-height:22px;height:100%;background:transparent;border-radius:8px 8px 0 0;cursor:pointer;${col<6?'border-right:1px solid oklch(91% 0.015 70);':''}`,
+          numWrapStyle:`padding:6px 6px 2px;min-height:22px;height:100%;background:transparent;border-radius:8px 8px 0 0;cursor:pointer;display:flex;align-items:flex-start;gap:4px;${col<6?'border-right:1px solid oklch(91% 0.015 70);':''}`,
           dayNumStyle:`display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 4px;border-radius:6px;font-size:12px;font-weight:${isToday?'800':'700'};color:${isToday?'oklch(64% 0.15 45)':isWeekend?'oklch(58% 0.18 25)':'oklch(45% 0.02 50)'};background:${isToday?'oklch(88% 0.07 45)':'transparent'};`,
           hasWeather: !!wx, weatherIcon: wx?wx.icon:'', weatherTemp: wx?wx.tempStr:'',
           onOpenDay: () => dayFn(dateStr),
@@ -1195,13 +1196,13 @@ class Component extends DCLogic {
           bars.push({
             id: ev.id+'-'+w,
             title: ev.title,
-            style: `position:absolute;left:calc(${colStart}/7*100% + 4px);width:calc(${(colEnd-colStart+1)}/7*100% - 8px);top:${22+rowIdx*21}px;height:17px;background:${pc.bg};color:${pc.text};border-radius:5px;font-size:10.5px;font-weight:700;padding:1px 6px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;pointer-events:auto;box-sizing:border-box;`,
+            style: `position:absolute;left:calc(${colStart}/7*100% + 4px);width:calc(${(colEnd-colStart+1)}/7*100% - 8px);top:${30+rowIdx*21}px;height:17px;background:${pc.bg};color:${pc.text};border-radius:5px;font-size:10.5px;font-weight:700;padding:1px 6px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;pointer-events:auto;box-sizing:border-box;`,
             onEdit: (e) => { e.stopPropagation(); editFn(ev); },
           });
         }
       }
       const maxRows = bars.length ? Math.max(...bars.map(b=>parseInt(b.style.match(/top:(\d+)px/)[1])/21))+1 : 0;
-      const totalHeight = Math.max(92, maxRows*21+4+22);
+      const totalHeight = Math.max(92, maxRows*21+4+30);
       const todayIdx = weekDays.findIndex(d=>d===TODAY);
       weeks.push({
         id:'w'+w, cells, bars,
