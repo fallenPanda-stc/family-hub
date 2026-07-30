@@ -166,7 +166,7 @@ firebase.initializeApp({
               </div>
             </sc-for>
             <sc-if value="{{ noUpcoming }}" hint-placeholder-val="{{ false }}">
-              <div style="font-size:13px;color:oklch(55% 0.02 50);padding:6px 0;">No upcoming events. Enjoy the quiet!</div>
+              <div style="font-size:13px;color:oklch(55% 0.02 50);padding:6px 0;">Nothing in the next 30 days.</div>
             </sc-if>
             <div onClick="{{ goCalendar }}" style="font-size:12.5px;font-weight:700;color:oklch(64% 0.13 55);cursor:pointer;">View full calendar →</div>
           </div>
@@ -789,6 +789,20 @@ firebase.initializeApp({
   </div>
 </sc-if>
 
+<sc-if value="{{ confirmDialogOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;background:oklch(20% 0.01 50 / 45%);display:flex;align-items:center;justify-content:center;z-index:60;animation:fadeIn .15s ease;" onClick="{{ cancelConfirm }}">
+    <div style="background:oklch(99% 0.008 70);border-radius:20px;padding:24px;width:380px;max-width:92vw;animation:popIn .18s ease;" onClick="{{ stopProp }}">
+      <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:17px;margin-bottom:10px;">{{ confirmDialogTitle }}</div>
+      <div style="font-size:13.5px;color:oklch(40% 0.02 50);line-height:1.5;margin-bottom:20px;">{{ confirmDialogMessage }}</div>
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;"></div>
+        <button onClick="{{ cancelConfirm }}" style="{{ secondaryBtnStyle }}">Cancel</button>
+        <button onClick="{{ confirmDeleteAction }}" style="{{ dangerBtnStyle }}">{{ confirmDialogLabel }}</button>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 const WEEKDAYS = ['S','M','T','W','T','F','S'];
@@ -804,9 +818,19 @@ const TODAY_LABEL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday'
 const YEAR_OPTIONS = [TODAY_Y-2, TODAY_Y-1, TODAY_Y, TODAY_Y+1, TODAY_Y+2, TODAY_Y+3];
 
 class Component extends DCLogic {
+  componentDidMount(){
+    this.__initSync();
+    this._escHandler = (e) => { if (e.key === 'Escape' && this.state.confirmDialog) this.cancelConfirm(); };
+    document.addEventListener('keydown', this._escHandler);
+  }
+  componentWillUnmount(){
+    this.__disconnect();
+    if (this._escHandler) document.removeEventListener('keydown', this._escHandler);
+  }
   state = {
     view: 'dashboard',
     weather: null,
+    confirmDialog: null,
     chartHiddenCats: {},
     collapsedGroups: {'Bills & Subscriptions': true, 'Expenses': true},
     calYear: TODAY_Y, calMonth: TODAY_M,
@@ -879,7 +903,7 @@ class Component extends DCLogic {
      design keeps working exactly as it did locally. */
   static get SYNC_KEYS(){ return ['events','categories','transactions','accounts','todos','nextId']; }
 
-  componentDidMount(){
+  __initSync(){
     const KEYS = Component.SYNC_KEYS;
     const raw = this.setState.bind(this);
     this.__raw = raw;
@@ -938,7 +962,7 @@ class Component extends DCLogic {
     clearTimeout(this.__timer);
   }
 
-  componentWillUnmount(){ this.__disconnect(); }
+  /* invoked from the design's own lifecycle hooks, see below */
 
   signOut = () => { firebase.auth().signOut(); };
 
@@ -1067,7 +1091,14 @@ class Component extends DCLogic {
   editAccount(acc){ this.setState({modal:{type:'account',editing:acc.id}, form:{...acc}}); }
 
   deleteEvent(id){ this.setState(s=>({events:s.events.filter(e=>e.id!==id)})); }
-  confirmDeleteEvent(id){ if (window.confirm('Delete this event?')) this.deleteEvent(id); }
+  requestDeleteEvent = (ev, closeModalAfter=false) => {
+    const kind = ev.annual ? 'occasion' : 'event';
+    const title = kind==='occasion' ? 'Delete occasion?' : 'Delete event?';
+    const message = kind==='occasion'
+      ? `Delete "${ev.title}"? This removes it from every year.`
+      : `Delete "${ev.title}"?`;
+    this.setState({confirmDialog:{kind, id:ev.id, title, message, confirmLabel:'Delete', closeModalAfter}});
+  };
   onNewTodoChange = (e) => this.setState({newTodoText: e.target.value});
   addTodo = () => {
     const text = this.state.newTodoText.trim();
@@ -1095,24 +1126,59 @@ class Component extends DCLogic {
     this.dragTodoId = null;
   };
   deleteTransaction(id){ this.setState(s=>({transactions:s.transactions.filter(t=>t.id!==id)})); }
-  confirmDeleteTransaction(id, closeModalAfter){
-    const tx = this.state.transactions.find(t=>t.id===id);
+  requestDeleteTransaction = (tx, closeModalAfter=false) => {
     const target = this.state.budgetYear*12 + this.state.budgetMonth;
-    const resolvedFreq = tx ? this.freqEntryForTarget(tx, target).frequency : null;
-    const isRecurring = tx && resolvedFreq && resolvedFreq !== 'once';
+    const resolvedFreq = this.freqEntryForTarget(tx, target).frequency;
+    const isRecurring = resolvedFreq && resolvedFreq !== 'once';
     if (isRecurring) {
       const start = this.txStartMonth(tx);
       if (target > start) {
-        if (!window.confirm(`This is a recurring transaction. Stop it starting this month and keep past occurrences?`)) return;
-        this.setState(s=>({transactions: s.transactions.map(t=>t.id===id?{...t, endsAt:target}:t), ...(closeModalAfter?{modal:null, form:{}}:{})}));
+        this.setState({confirmDialog:{kind:'transactionRecurring', id:tx.id, title:'Recurring transaction', message:'This is a recurring transaction. Stopping it keeps past occurrences and stops it from this month onward.', confirmLabel:'Stop from this month', closeModalAfter}});
         return;
       }
     }
-    if (!window.confirm('Delete this transaction?')) return;
-    this.deleteTransaction(id);
-    if (closeModalAfter) this.setState({modal:null, form:{}});
-  }
+    this.setState({confirmDialog:{kind:'transaction', id:tx.id, title:'Delete transaction?', message:`Delete "${tx.desc||'this transaction'}"?`, confirmLabel:'Delete', closeModalAfter}});
+  };
   deleteAccount(id){ this.setState(s=>({accounts:s.accounts.filter(a=>a.id!==id)})); }
+  requestDeleteAccount = (acc, closeModalAfter=false) => {
+    this.setState({confirmDialog:{kind:'account', id:acc.id, title:'Delete account?', message:`Delete "${acc.service||'this account'}"?`, confirmLabel:'Delete', closeModalAfter}});
+  };
+  requestDeleteTodo = (td) => {
+    this.setState({confirmDialog:{kind:'todo', id:td.id, title:'Delete note?', message:`Delete "${td.text}"?`, confirmLabel:'Delete'}});
+  };
+  requestDeleteCategory = (id, closeModalAfter=false) => {
+    const cat = this.state.categories.find(c=>c.id===id);
+    const count = cat ? this.state.transactions.filter(t=>t.category===cat.name).length : 0;
+    const message = count > 0
+      ? `"${cat?.name||''}" has ${count} transaction${count===1?'':'s'}. Deleting this category will also delete ${count===1?'it':'all of them'}.`
+      : `Delete category "${cat?.name||''}"?`;
+    this.setState({confirmDialog:{kind:'category', id, title:'Delete category?', message, confirmLabel:'Delete', closeModalAfter}});
+  };
+  cancelConfirm = () => this.setState({confirmDialog:null});
+  confirmDeleteAction = () => {
+    const cd = this.state.confirmDialog;
+    if (!cd) return;
+    let patch = {};
+    if (cd.kind === 'event' || cd.kind === 'occasion') {
+      patch.events = this.state.events.filter(e=>e.id!==cd.id);
+    } else if (cd.kind === 'transaction') {
+      patch.transactions = this.state.transactions.filter(t=>t.id!==cd.id);
+    } else if (cd.kind === 'transactionRecurring') {
+      const target = this.state.budgetYear*12 + this.state.budgetMonth;
+      patch.transactions = this.state.transactions.map(t=>t.id===cd.id?{...t, endsAt:target}:t);
+    } else if (cd.kind === 'account') {
+      patch.accounts = this.state.accounts.filter(a=>a.id!==cd.id);
+    } else if (cd.kind === 'todo') {
+      patch.todos = this.state.todos.filter(t=>t.id!==cd.id);
+    } else if (cd.kind === 'category') {
+      const cat = this.state.categories.find(c=>c.id===cd.id);
+      patch.categories = this.state.categories.filter(c=>c.id!==cd.id);
+      patch.transactions = cat ? this.state.transactions.filter(t=>t.category!==cat.name) : this.state.transactions;
+    }
+    patch.confirmDialog = null;
+    if (cd.closeModalAfter) { patch.modal = null; patch.form = {}; }
+    this.setState(patch);
+  };
 
   setFormField(field, value){ this.setState(s=>({form:{...s.form, [field]:value}})); }
 
@@ -1171,26 +1237,12 @@ class Component extends DCLogic {
   deleteModalEntry = () => {
     const {type, editing} = this.state.modal;
     if (!editing) return;
-    if (type === 'event' || type === 'occasion') this.deleteEvent(editing);
-    else if (type === 'transaction') return this.confirmDeleteTransaction(editing, true);
-    else if (type === 'category') return this.deleteCategory(editing);
-    else if (type === 'account') this.deleteAccount(editing);
+    if (type === 'event' || type === 'occasion') { const ev = this.state.events.find(e=>e.id===editing); if (ev) return this.requestDeleteEvent(ev, true); }
+    else if (type === 'transaction') { const tx = this.state.transactions.find(t=>t.id===editing); if (tx) return this.requestDeleteTransaction(tx, true); }
+    else if (type === 'category') return this.requestDeleteCategory(editing, true);
+    else if (type === 'account') { const acc = this.state.accounts.find(a=>a.id===editing); if (acc) return this.requestDeleteAccount(acc, true); this.setState({modal:null, form:{}}); return; }
     this.setState({modal:null, form:{}});
   };
-
-  deleteCategory(id){
-    const cat = this.state.categories.find(c=>c.id===id);
-    const count = cat ? this.state.transactions.filter(t=>t.category===cat.name).length : 0;
-    const msg = count > 0
-      ? `"${cat.name}" has ${count} transaction${count===1?'':'s'}. Deleting this category will also delete ${count===1?'it':'all of them'}. Continue?`
-      : `Delete category "${cat?.name||''}"?`;
-    if (!window.confirm(msg)) return;
-    this.setState(s=>({
-      categories: s.categories.filter(c=>c.id!==id),
-      transactions: cat ? s.transactions.filter(t=>t.category!==cat.name) : s.transactions,
-      modal:null, form:{},
-    }));
-  }
 
   toggleChartCat = (id) => this.setState(s => ({chartHiddenCats: {...s.chartHiddenCats, [id]: !s.chartHiddenCats[id]}}));
   onTxSortChange = (e) => this.setState({txSort: e.target.value, txPage:0});
@@ -1326,8 +1378,10 @@ class Component extends DCLogic {
 
     // events sorted — for annual occasions, only their single nearest upcoming occurrence should appear in Upcoming
     const seenAnnualIds = new Set();
+    const UPCOMING_HORIZON = 30;
+    const upcomingHorizonDate = (() => { const d = new Date(TODAY+'T00:00:00'); d.setDate(d.getDate()+UPCOMING_HORIZON); return `${d.getFullYear()}-${P2(d.getMonth()+1)}-${P2(d.getDate())}`; })();
     const upcomingDedup = [...expandedEvents]
-      .filter(e => e.date >= TODAY)
+      .filter(e => e.date >= TODAY && e.date <= upcomingHorizonDate)
       .sort((a,b)=> a.date.localeCompare(b.date))
       .filter(e => {
         if (!e.annual) return true;
@@ -1344,7 +1398,7 @@ class Component extends DCLogic {
       const isMultiDay = ev.endDate && ev.endDate !== ev.date;
       const dateDisplay = isMultiDay ? `${this.fmtShortDate(ev.date)} – ${this.fmtShortDate(ev.endDate)}` : sd.text;
       const timeDisplay = ev.endTime ? `${this.formatTime12h(ev.time)||'?'} – ${this.formatTime12h(ev.endTime)}` : this.formatTime12h(ev.time);
-      return {...ev, occasionIcon: ev.annual ? this.occasionIconFor(ev.occasionType)+' ' : '', shortDate:dateDisplay, timeDisplay, hasMeta: !!(timeDisplay || ev.person), shortDateColor: sd.isWeekend?'oklch(58% 0.18 25)':'oklch(64% 0.13 55)', hasWeather: !!wx, weatherIcon: wx?wx.icon:'', weatherTemp: wx?wx.tempStr:'', personBadgeStyle:`font-size:11px;font-weight:700;padding:1px 8px;border-radius:6px;background:${pc.bg};color:${pc.text};display:inline-block;`, onEdit:()=>this.editEvent(ev), onDelete:()=>this.deleteEvent(ev.id)};
+      return {...ev, occasionIcon: ev.annual ? this.occasionIconFor(ev.occasionType)+' ' : '', shortDate:dateDisplay, timeDisplay, hasMeta: !!(timeDisplay || ev.person), shortDateColor: sd.isWeekend?'oklch(58% 0.18 25)':'oklch(64% 0.13 55)', hasWeather: !!wx, weatherIcon: wx?wx.icon:'', weatherTemp: wx?wx.tempStr:'', personBadgeStyle:`font-size:11px;font-weight:700;padding:1px 8px;border-radius:6px;background:${pc.bg};color:${pc.text};display:inline-block;`, onEdit:()=>this.editEvent(ev), onDelete:()=>this.requestDeleteEvent(ev)};
     };
     const upcomingPreview = upcoming.slice(0,4).map(mkEv);
     const upcomingFull = upcoming.slice(0,8).map(mkEv);
@@ -1649,7 +1703,7 @@ class Component extends DCLogic {
       amountStr: (tx.type==='income'?'+':'-')+'$'+this.fmtMoney(this.baseAmountForTarget(tx, bYear*12+bMonth)),
       amountColor: tx.type==='income' ? 'oklch(55% 0.12 145)' : 'oklch(40% 0.02 50)',
       onEdit: () => this.editTransaction(tx),
-      onDelete: () => this.confirmDeleteTransaction(tx.id),
+      onDelete: () => this.requestDeleteTransaction(tx),
     }));
 
     // accounts
@@ -1662,7 +1716,7 @@ class Component extends DCLogic {
         toggleLabel: s.revealed[acc.id] ? 'Hide' : 'Show',
         onToggle: () => this.toggleReveal(acc.id),
         onEdit: () => this.editAccount(acc),
-        onDelete: () => this.deleteAccount(acc.id),
+        onDelete: () => this.requestDeleteAccount(acc),
       };
     };
     const accountsPreview = s.accounts.slice(0,4).map(mkAcc);
@@ -1741,7 +1795,7 @@ class Component extends DCLogic {
           const wx = this.weatherForDate(modal.date);
           const timeDisplay = ev.annual ? '' : (ev.endTime ? `${this.formatTime12h(ev.time)||'?'} – ${this.formatTime12h(ev.endTime)}` : this.formatTime12h(ev.time));
           const yrsLabel = (ev.annual && ev.yearsSince != null) ? ` (${ev.yearsSince})` : '';
-          return {...ev, title: (ev.annual ? this.occasionIconFor(ev.occasionType)+' ' : '') + ev.title + yrsLabel, timeDisplay, hasWeather: !!wx, weatherIcon: wx?wx.icon:'', weatherTemp: wx?wx.tempStr:'', personBadgeStyle:`font-size:11px;font-weight:700;padding:1px 8px;border-radius:6px;background:${pc.bg};color:${pc.text};display:inline-block;`, onEdit:()=>this.editEvent(ev), onDelete:()=>this.confirmDeleteEvent(ev.id)};
+          return {...ev, title: (ev.annual ? this.occasionIconFor(ev.occasionType)+' ' : '') + ev.title + yrsLabel, timeDisplay, hasWeather: !!wx, weatherIcon: wx?wx.icon:'', weatherTemp: wx?wx.tempStr:'', personBadgeStyle:`font-size:11px;font-weight:700;padding:1px 8px;border-radius:6px;background:${pc.bg};color:${pc.text};display:inline-block;`, onEdit:()=>this.editEvent(ev), onDelete:()=>this.requestDeleteEvent(ev)};
         }),
         noEvents: dayEvents.length===0,
         onAddEvent: () => this.openAddEventForDate(modal.date),
@@ -1777,7 +1831,7 @@ class Component extends DCLogic {
         ...td,
         textStyle: td.done ? 'text-decoration:line-through;color:oklch(60% 0.02 50);' : 'color:oklch(30% 0.02 50);',
         onToggle: () => this.toggleTodo(td.id),
-        onDelete: () => this.deleteTodo(td.id),
+        onDelete: () => this.requestDeleteTodo(td),
         onDragStart: this.onTodoDragStart(td.id),
         onDragOver: this.onTodoDragOver,
         onDrop: this.onTodoDrop(td.id),
@@ -1897,6 +1951,12 @@ class Component extends DCLogic {
       },
       closeModal:this.closeModal, closeModalBg:this.closeModalBg, stopProp:this.stopProp,
       saveModalEntry:this.saveModalEntry, deleteModalEntry:this.deleteModalEntry,
+
+      confirmDialogOpen: !!s.confirmDialog,
+      confirmDialogTitle: s.confirmDialog?.title || '',
+      confirmDialogMessage: s.confirmDialog?.message || '',
+      confirmDialogLabel: s.confirmDialog?.confirmLabel || 'Delete',
+      cancelConfirm: this.cancelConfirm, confirmDeleteAction: this.confirmDeleteAction,
     };
   }
 }
