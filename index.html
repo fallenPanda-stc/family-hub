@@ -38,8 +38,36 @@ firebase.initializeApp({
   input,select{font-family:'Nunito',sans-serif;}
   @keyframes fadeIn{from{opacity:0}to{opacity:1}}
   @keyframes popIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @media (max-width: 820px) {
+    .app-shell { flex-direction: column !important; }
+    .app-nav {
+      width: 100% !important; flex: none !important;
+      flex-direction: row !important; align-items: center !important;
+      justify-content: space-between !important; gap: 10px !important;
+      padding: 10px 14px !important; position: sticky !important; top: 0 !important; z-index: 30 !important;
+    }
+    .nav-brand { padding: 0 !important; }
+    .nav-tabs {
+      position: fixed !important; left: 0 !important; right: 0 !important; bottom: 0 !important; top: auto !important;
+      flex-direction: row !important; justify-content: space-around !important; align-items: stretch !important;
+      gap: 0 !important; background: oklch(99% 0.008 70) !important;
+      border-top: 1px solid oklch(90% 0.02 70) !important; padding: 6px 4px !important; z-index: 40 !important;
+    }
+    .nav-tabs > div { flex: 1 !important; min-height: 44px !important; display: flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; }
+    .nav-foot { margin-top: 0 !important; padding: 0 !important; border-top: none !important; font-size: 11px !important; }
+    .app-main { padding: 20px 16px 92px !important; }
+    .dash-grid, .cal-split, .bud-split, .card-grid, .stat-grid { grid-template-columns: 1fr !important; }
 
-  /* ---------- auth gate ---------- */
+    /* --- added by the build --- */
+    .app-nav { border-right: none !important; border-bottom: 1px solid oklch(90% 0.02 70) !important; }
+    .nav-tabs { padding-bottom: calc(6px + env(safe-area-inset-bottom)) !important; }
+    .nav-foot { text-align: right !important; flex: none !important; }
+    .nav-foot > div:nth-child(1),
+    .nav-foot > div:nth-child(2) { display: none !important; }
+    .nav-foot > div:nth-child(3) { margin-top: 0 !important; }
+  }
+
+  /* ---------- sign-in gate ---------- */
   #gate{position:fixed;inset:0;z-index:9999;background:oklch(96% 0.02 70);display:flex;align-items:center;justify-content:center;padding:20px;font-family:'Nunito',sans-serif;}
   #gate.hide{display:none}
   #gate .box{background:oklch(99% 0.008 70);border:1px solid oklch(90% 0.02 70);border-radius:20px;padding:34px 28px;width:100%;max-width:380px}
@@ -55,38 +83,6 @@ firebase.initializeApp({
   #gate .err{background:oklch(94% 0.04 25);color:oklch(48% 0.16 25);font-size:12.5px;font-weight:600;padding:9px 11px;border-radius:8px;margin-bottom:12px}
   #gate .spin{width:32px;height:32px;border:3px solid oklch(90% 0.02 70);border-top-color:oklch(64% 0.15 45);border-radius:50%;animation:sp .9s linear infinite;margin:0 auto}
   @keyframes sp{to{transform:rotate(360deg)}}
-
-  /* ---------- phone layout ---------- */
-  @media (max-width:820px){
-    .app-shell{flex-direction:column!important}
-    .app-nav{width:auto!important;flex-direction:row!important;align-items:center!important;
-             justify-content:space-between!important;gap:10px!important;
-             padding:10px 14px!important;border-right:none!important;
-             border-bottom:1px solid oklch(90% 0.02 70)!important;
-             position:sticky!important;top:0;z-index:30}
-    .nav-brand{padding:0!important}
-    .nav-tabs{position:fixed!important;left:0;right:0;bottom:0;z-index:40;
-              flex-direction:row!important;justify-content:space-around!important;gap:0!important;
-              background:oklch(99% 0.008 70);border-top:1px solid oklch(90% 0.02 70);
-              padding:6px 4px calc(6px + env(safe-area-inset-bottom))!important}
-    .nav-tabs > div{flex:1 1 0!important;justify-content:center!important;
-                    padding:10px 2px!important;font-size:12.5px!important;
-                    border-radius:10px!important;margin:0 3px!important}
-    .nav-foot{margin-top:0!important;border-top:none!important;padding:0!important;
-              font-size:11.5px!important;text-align:right;flex:none}
-    .nav-foot > div:nth-child(1),
-    .nav-foot > div:nth-child(2){display:none!important}
-    .nav-foot > div:nth-child(3){margin-top:0!important}
-    .app-main{padding:18px 13px 92px!important}
-    .dash-grid{grid-template-columns:1fr!important;gap:14px!important}
-    .cal-split{grid-template-columns:1fr!important;gap:16px!important}
-    .bud-split{grid-template-columns:1fr!important;gap:16px!important}
-    .card-grid{grid-template-columns:1fr!important}
-    .stat-grid{grid-template-columns:1fr!important}
-  }
-  @media (max-width:420px){
-    .nav-tabs > div{font-size:11.5px!important;padding:10px 0!important;margin:0 1px!important}
-  }
 </style>
 </helmet>
 
@@ -99,18 +95,19 @@ firebase.initializeApp({
     </div>
 
     <div class="nav-tabs" style="display:flex;flex-direction:column;gap:6px;">
-      <div onClick="{{ goDashboard }}" style="{{ navStyle_dashboard }}">
-        <span style="{{ navDotStyle_dashboard }}"></span> Dashboard
-      </div>
-      <div onClick="{{ goCalendar }}" style="{{ navStyle_calendar }}">
-        <span style="{{ navDotStyle_calendar }}"></span> Calendar
-      </div>
-      <div onClick="{{ goBudget }}" style="{{ navStyle_budget }}">
-        <span style="{{ navDotStyle_budget }}"></span> Budget
-      </div>
-      <div onClick="{{ goDirectory }}" style="{{ navStyle_directory }}">
-        <span style="{{ navDotStyle_directory }}"></span> Accounts
-      </div>
+    <div onClick="{{ goDashboard }}" style="{{ navStyle_dashboard }}">
+      <span style="{{ navDotStyle_dashboard }}"></span> Dashboard
+    </div>
+    <div onClick="{{ goCalendar }}" style="{{ navStyle_calendar }}">
+      <span style="{{ navDotStyle_calendar }}"></span> Calendar
+    </div>
+    <div onClick="{{ goBudget }}" style="{{ navStyle_budget }}">
+      <span style="{{ navDotStyle_budget }}"></span> Budget
+    </div>
+    <div onClick="{{ goDirectory }}" style="{{ navStyle_directory }}">
+      <span style="{{ navDotStyle_directory }}"></span> Accounts
+    </div>
+
     </div>
 
     <div class="nav-foot" style="margin-top:auto;padding:14px 8px 4px;font-size:12px;color:oklch(55% 0.02 50);border-top:1px solid oklch(92% 0.02 70);">
@@ -142,7 +139,10 @@ firebase.initializeApp({
             </div>
             <sc-for list="{{ upcomingPreview }}" as="ev" hint-placeholder-count="3">
               <div onClick="{{ ev.onEdit }}" style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid oklch(93% 0.015 70);cursor:pointer;">
-                <div style="font-size:12px;font-weight:800;color:{{ ev.shortDateColor }};min-width:70px;">{{ ev.shortDate }}</div>
+                <div style="min-width:70px;">
+                  <div style="font-size:12px;font-weight:800;color:{{ ev.shortDateColor }};">{{ ev.shortDate }}</div>
+                  <div style="font-size:11px;color:oklch(50% 0.02 50);display:flex;align-items:center;gap:3px;">{{ ev.weatherIcon }} {{ ev.weatherTemp }}</div>
+                </div>
                 <div style="flex:1;min-width:0;">
                   <div style="font-weight:700;font-size:14px;">{{ ev.title }}</div>
                   <div style="font-size:12.5px;color:oklch(50% 0.02 50);display:flex;align-items:center;gap:6px;">{{ ev.timeDisplay }} · <span style="{{ ev.personBadgeStyle }}">{{ ev.person }}</span></div>
@@ -175,7 +175,7 @@ firebase.initializeApp({
             <div onClick="{{ goBudget }}" style="font-size:12.5px;font-weight:700;color:oklch(60% 0.12 145);cursor:pointer;">View full budget →</div>
             <div style="border-top:1px solid oklch(93% 0.015 70);margin-top:6px;padding-top:14px;">
               <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:14px;margin-bottom:4px;">This month, day {{ thisMonth.daysElapsed }} of {{ thisMonth.daysInMonth }}</div>
-              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin:12px 0;">
+              <div class="stat-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin:12px 0;">
                 <div>
                   <div style="font-size:11px;color:oklch(50% 0.02 50);">Projected expenses</div>
                   <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:17px;">{{ thisMonth.projectedTotalStr }}</div>
@@ -274,7 +274,7 @@ firebase.initializeApp({
                   </div>
                   <div style="{{ week.barsAreaStyle }}">
                     <sc-for list="{{ week.bars }}" as="bar" hint-placeholder-count="1">
-                      <div style="{{ bar.style }}" onClick="{{ bar.onEdit }}">{{ bar.title }}</div>
+                      <div style="{{ bar.style }}" onClick="{{ bar.onEdit }}" title="{{ bar.title }}">{{ bar.title }}</div>
                     </sc-for>
                   </div>
                 </div>
@@ -286,7 +286,10 @@ firebase.initializeApp({
             <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:16px;margin-bottom:14px;">Upcoming</div>
             <sc-for list="{{ upcomingFull }}" as="ev" hint-placeholder-count="5">
               <div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid oklch(93% 0.015 70);">
-                <div style="font-size:12px;font-weight:800;color:{{ ev.shortDateColor }};min-width:70px;">{{ ev.shortDate }}</div>
+                <div style="min-width:70px;">
+                  <div style="font-size:12px;font-weight:800;color:{{ ev.shortDateColor }};">{{ ev.shortDate }}</div>
+                  <div style="font-size:11px;color:oklch(50% 0.02 50);display:flex;align-items:center;gap:3px;">{{ ev.weatherIcon }} {{ ev.weatherTemp }}</div>
+                </div>
                 <div style="flex:1;min-width:0;cursor:pointer;" onClick="{{ ev.onEdit }}">
                   <div style="font-weight:700;font-size:14px;">{{ ev.title }}</div>
                   <div style="font-size:12.5px;color:oklch(50% 0.02 50);display:flex;align-items:center;gap:6px;">{{ ev.timeDisplay }} · <span style="{{ ev.personBadgeStyle }}">{{ ev.person }}</span></div>
@@ -295,6 +298,27 @@ firebase.initializeApp({
               </div>
             </sc-for>
           </div>
+        </div>
+
+        <div style="background:oklch(99% 0.008 70);border:1px solid oklch(90% 0.02 70);border-radius:18px;padding:22px;margin-top:24px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:16px;">Notes &amp; To-Do</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:14px;">
+            <input value="{{ newTodoText }}" onChange="{{ onNewTodoChange }}" onKeyDown="{{ onNewTodoKeyDown }}" placeholder="Add a note or to-do…" style="flex:1;font-size:14px;padding:10px 12px;border-radius:10px;border:1px solid oklch(88% 0.02 70);background:oklch(98% 0.005 70);color:oklch(28% 0.03 50);font-weight:600;"></input>
+            <button onClick="{{ addTodo }}" style="{{ primaryBtnStyle }}">Add</button>
+          </div>
+          <sc-for list="{{ todoRows }}" as="td" hint-placeholder-count="3">
+            <div draggable="{{ true }}" onDragStart="{{ td.onDragStart }}" onDragOver="{{ td.onDragOver }}" onDrop="{{ td.onDrop }}" style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-top:1px solid oklch(93% 0.015 70);cursor:grab;">
+              <span style="color:oklch(75% 0.01 70);font-size:14px;line-height:1;margin-top:3px;flex:none;">⠿</span>
+              <input type="checkbox" checked="{{ td.done }}" onChange="{{ td.onToggle }}" style="margin-top:3px;width:16px;height:16px;cursor:pointer;flex:none;"></input>
+              <div style="flex:1;min-width:0;font-size:14px;{{ td.textStyle }}">{{ td.text }}</div>
+              <div onClick="{{ td.onDelete }}" style="{{ deleteXStyle }}">✕</div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noTodos }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:13px;color:oklch(55% 0.02 50);padding:6px 0;">No notes yet.</div>
+          </sc-if>
         </div>
       </div>
     </sc-if>
@@ -491,13 +515,16 @@ firebase.initializeApp({
         <div style="display:flex;flex-direction:column;gap:12px;">
           <label style="{{ fieldLabelStyle }}">Title<input style="{{ fieldInputStyle }}" value="{{ form.title }}" onChange="{{ onFormChange_title }}" placeholder="Piano lesson"></label>
           <div style="display:flex;gap:12px;">
-            <label style="{{ fieldLabelStyle }}flex:1;">Start Date<input type="date" style="{{ fieldInputStyle }}" value="{{ form.date }}" onChange="{{ onFormChange_date }}"></label>
-            <label style="{{ fieldLabelStyle }}flex:1;">End Date<input type="date" style="{{ fieldInputStyle }}" value="{{ form.endDate }}" onChange="{{ onFormChange_endDate }}"></label>
+            <label style="{{ fieldLabelStyle }}flex:1;">Start Date<input type="date" lang="en-CA" style="{{ fieldInputStyle }}" value="{{ form.date }}" onChange="{{ onFormChange_date }}"></label>
+            <label style="{{ fieldLabelStyle }}flex:1;">End Date<input type="date" lang="en-CA" style="{{ fieldInputStyle }}" value="{{ form.endDate }}" onChange="{{ onFormChange_endDate }}"></label>
           </div>
           <div style="display:flex;gap:12px;">
-            <label style="{{ fieldLabelStyle }}flex:1;">Start Time<input type="time" style="{{ fieldInputStyle }}" value="{{ form.time }}" onChange="{{ onFormChange_time }}"></label>
-            <label style="{{ fieldLabelStyle }}flex:1;">End Time<input type="time" style="{{ fieldInputStyle }}" value="{{ form.endTime }}" onChange="{{ onFormChange_endTime }}"></label>
+            <label style="{{ fieldLabelStyle }}flex:1;">Start Time<input type="time" step="300" style="{{ fieldInputStyle }}" value="{{ form.time }}" onChange="{{ onFormChange_time }}"></label>
+            <label style="{{ fieldLabelStyle }}flex:1;">End Time<input type="time" step="300" style="{{ fieldInputStyle }}" value="{{ form.endTime }}" onChange="{{ onFormChange_endTime }}"></label>
           </div>
+          <sc-if value="{{ formError }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:12.5px;font-weight:700;color:oklch(55% 0.18 25);">{{ formError }}</div>
+          </sc-if>
           <label style="{{ fieldLabelStyle }}">Who<select style="{{ fieldInputStyle }}" value="{{ form.person }}" onChange="{{ onFormChange_person }}">
             <option value="Jihoon">Jihoon</option>
             <option value="Youlim">Youlim</option>
@@ -539,7 +566,7 @@ firebase.initializeApp({
             <option value="annually">Annually</option>
             <option value="biannually">Bi-annually</option>
           </select></sc-if></label>
-          <label style="{{ fieldLabelStyle }}">Date<input type="date" style="{{ fieldInputStyle }}" value="{{ form.date }}" onChange="{{ onFormChange_date }}"></label>
+          <label style="{{ fieldLabelStyle }}">Date<input type="date" lang="en-CA" style="{{ fieldInputStyle }}" value="{{ form.date }}" onChange="{{ onFormChange_date }}"></label>
           <label style="{{ fieldLabelStyle }}">Note<input style="{{ fieldInputStyle }}" value="{{ form.note }}" onChange="{{ onFormChange_note }}" placeholder="Optional note"></label>
         </div>
       </sc-if>
@@ -556,7 +583,7 @@ firebase.initializeApp({
 
       <sc-if value="{{ isCategoryDetailModal }}" hint-placeholder-val="{{ false }}">
         <div style="display:flex;flex-direction:column;gap:16px;">
-          <div class="stat-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
             <div style="background:oklch(97% 0.015 70);border-radius:12px;padding:12px;">
               <div style="font-size:11px;color:oklch(50% 0.02 50);">This Month</div>
               <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:16px;">${{ catDetail.thisMonthStr }}</div>
@@ -643,11 +670,9 @@ firebase.initializeApp({
 const WEEKDAYS = ['S','M','T','W','T','F','S'];
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const CAT_COLORS = ['oklch(64% 0.12 45)','oklch(64% 0.12 90)','oklch(60% 0.12 145)','oklch(58% 0.10 200)','oklch(58% 0.10 260)','oklch(60% 0.12 320)'];
-
-/* --- real current date, so the app never goes stale --- */
 const _N = new Date();
 const P2 = n => (n < 10 ? '0' + n : '' + n);
-const TODAY = _N.getFullYear() + '-' + P2(_N.getMonth() + 1) + '-' + P2(_N.getDate());
+const TODAY = _N.getFullYear() + '-' + P2(_N.getMonth()+1) + '-' + P2(_N.getDate());
 const TODAY_M = _N.getMonth();
 const TODAY_Y = _N.getFullYear();
 const TODAY_LABEL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][_N.getDay()]
@@ -661,7 +686,8 @@ class Component extends DCLogic {
     collapsedGroups: {'Bills & Subscriptions': true, 'Expenses': true},
     calYear: TODAY_Y, calMonth: TODAY_M,
     budgetYear: TODAY_Y, budgetMonth: TODAY_M,
-    userEmail: '',
+    todos: [],
+    newTodoText: '',
     events: [],
     categories: [
       {id:'c1', name:'Groceries', group:'Expenses'},
@@ -676,15 +702,20 @@ class Component extends DCLogic {
     modal: null, // {type, editing}
     form: {},
     revealed: {},
+    userEmail: '',
     nextId: 100,
   };
 
-  genId(){ const id = this.state.nextId; this.setState(s=>({nextId:s.nextId+1})); return 'x'+id; }
-
+  genId(){
+    const n = Math.max(this._idCounter ?? 0, this.state.nextId ?? 0) + 1;
+    this._idCounter = n;
+    this.setState({nextId: n});
+    return 'x' + n;
+  }
   /* ================= FIREBASE SYNC =================
      The household lives in one Firestore document, so every part of the
      design keeps working exactly as it did locally. */
-  static get SYNC_KEYS(){ return ['events','categories','transactions','accounts','nextId']; }
+  static get SYNC_KEYS(){ return ['events','categories','transactions','accounts','todos','nextId']; }
 
   componentDidMount(){
     const KEYS = Component.SYNC_KEYS;
@@ -717,7 +748,7 @@ class Component extends DCLogic {
       if (user) { raw({ userEmail: user.email }); this.__connect(); }
       else {
         this.__disconnect();
-        raw({ userEmail:'', events:[], transactions:[], accounts:[], modal:null, form:{} });
+        raw({ userEmail:'', events:[], transactions:[], accounts:[], todos:[], modal:null, form:{} });
       }
     });
   }
@@ -798,10 +829,10 @@ class Component extends DCLogic {
 
   stopProp = (e) => e.stopPropagation();
   closeModalBg = () => this.setState({modal:null, form:{}});
-  closeModal = () => this.setState({modal:null, form:{}});
+  closeModal = () => this.setState({modal:null, form:{}, formError:null});
 
-  openAddEvent = () => this.setState({modal:{type:'event',editing:null}, form:{title:'',date:TODAY,endDate:TODAY,time:'',endTime:'',person:'Both',location:'',note:''}});
-  openAddEventForDate = (date) => this.setState({modal:{type:'event',editing:null}, form:{title:'',date,endDate:date,time:'',endTime:'',person:'Both',location:'',note:''}});
+  openAddEvent = () => this.setState({modal:{type:'event',editing:null}, form:{title:'',date:TODAY,endDate:TODAY,time:'',endTime:'',person:'Both',location:'',note:''}, formError:null});
+  openAddEventForDate = (date) => this.setState({modal:{type:'event',editing:null}, form:{title:'',date,endDate:date,time:'',endTime:'',person:'Both',location:'',note:''}, formError:null});
   openAddTransaction = () => this.setState({modal:{type:'transaction',editing:null}, form:{desc:'',amount:'',type:'expense',frequency:'once',category:this.state.categories[0]?.name||'',date:TODAY,note:''}});
   openAddCategory = () => this.setState({modal:{type:'category',editing:null}, form:{name:'',group:'Expenses'}});
   openAddAccount = () => this.setState({modal:{type:'account',editing:null}, form:{service:'',owner:'Jihoon',username:'',password:'',url:'',note:''}});
@@ -811,7 +842,23 @@ class Component extends DCLogic {
   openDayDetail(date){ this.setState({modal:{type:'dayDetail',date}}); }
   goCalToday = () => this.setState({calMonth:TODAY_M, calYear:TODAY_Y});
 
-  editEvent(ev){ this.setState({modal:{type:'event',editing:ev.id}, form:{...ev}}); }
+  roundTimeTo5(t){
+    if (!t) return t;
+    const [h,m] = t.split(':').map(Number);
+    let total = Math.round((h*60+m)/5)*5;
+    if (total > 23*60+55) total = 23*60+55;
+    if (total < 0) total = 0;
+    const rh = Math.floor(total/60), rm = total%60;
+    return String(rh).padStart(2,'0')+':'+String(rm).padStart(2,'0');
+  }
+  editEvent(ev){ this.setState({modal:{type:'event',editing:ev.id}, form:{...ev, time:this.roundTimeTo5(ev.time), endTime:this.roundTimeTo5(ev.endTime)}, formError:null}); }
+  formatTime12h(t){
+    if (!t) return '';
+    const [h,m] = t.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    let h12 = h % 12; if (h12 === 0) h12 = 12;
+    return `${h12}:${String(m).padStart(2,'0')} ${period}`;
+  }
   baseAmountForTarget(t, target){
     if (Array.isArray(t.amounts) && t.amounts.length) {
       const applicable = t.amounts.filter(a => a.from <= target);
@@ -841,6 +888,32 @@ class Component extends DCLogic {
 
   deleteEvent(id){ this.setState(s=>({events:s.events.filter(e=>e.id!==id)})); }
   confirmDeleteEvent(id){ if (window.confirm('Delete this event?')) this.deleteEvent(id); }
+  onNewTodoChange = (e) => this.setState({newTodoText: e.target.value});
+  addTodo = () => {
+    const text = this.state.newTodoText.trim();
+    if (!text) return;
+    this.setState(s => ({todos: [...s.todos, {id:this.genId(), text, done:false}], newTodoText:''}));
+  };
+  onNewTodoKeyDown = (e) => { if (e.key === 'Enter') this.addTodo(); };
+  toggleTodo = (id) => this.setState(s => ({todos: s.todos.map(t => t.id===id ? {...t, done:!t.done} : t)}));
+  deleteTodo = (id) => this.setState(s => ({todos: s.todos.filter(t => t.id !== id)}));
+  onTodoDragStart = (id) => (e) => { this.dragTodoId = id; e.dataTransfer.effectAllowed = 'move'; };
+  onTodoDragOver = (e) => { e.preventDefault(); };
+  onTodoDrop = (targetId) => (e) => {
+    e.preventDefault();
+    const dragId = this.dragTodoId;
+    if (!dragId || dragId === targetId) return;
+    this.setState(s => {
+      const todos = [...s.todos];
+      const fromIdx = todos.findIndex(t=>t.id===dragId);
+      const toIdx = todos.findIndex(t=>t.id===targetId);
+      if (fromIdx===-1||toIdx===-1) return {};
+      const [moved] = todos.splice(fromIdx,1);
+      todos.splice(toIdx,0,moved);
+      return {todos};
+    });
+    this.dragTodoId = null;
+  };
   deleteTransaction(id){ this.setState(s=>({transactions:s.transactions.filter(t=>t.id!==id)})); }
   confirmDeleteTransaction(id, closeModalAfter){
     const tx = this.state.transactions.find(t=>t.id===id);
@@ -867,6 +940,10 @@ class Component extends DCLogic {
     const {type, editing} = this.state.modal;
     const f = this.state.form;
     if (type === 'event') {
+      if (f.date && f.endDate && f.date === f.endDate && f.time && f.endTime && f.endTime <= f.time) {
+        this.setState({formError: 'End time must be after the start time.'});
+        return;
+      }
       const entry = {id: editing || this.genId(), title:f.title||'Untitled', date:f.date||TODAY, endDate:f.endDate||f.date||TODAY, time:f.time||'', endTime:f.endTime||'', person:f.person||'Both', location:f.location||'', note:f.note||''};
       this.setState(s => ({events: editing ? s.events.map(e=>e.id===editing?entry:e) : [...s.events, entry]}));
     } else if (type === 'transaction') {
@@ -1049,13 +1126,25 @@ class Component extends DCLogic {
     // events sorted
     const sortedEvents = [...s.events].sort((a,b)=> a.date.localeCompare(b.date));
     const upcoming = sortedEvents.filter(e => e.date >= TODAY);
+    const WEATHER_ICONS = {
+      sun: '☀️', cloud: '☁️', rain: '🌧️', partly: '⛅',
+    };
+    const weatherForDate = (dateStr) => {
+      let hash = 0;
+      for (let i=0;i<dateStr.length;i++) hash = (hash*31 + dateStr.charCodeAt(i)) >>> 0;
+      const kinds = ['sun','partly','cloud','rain'];
+      const kind = kinds[hash % kinds.length];
+      const temp = 18 + (hash % 15); // 18-32 C
+      return {icon: WEATHER_ICONS[kind], tempStr: `${temp}°C`};
+    };
     const mkEv = (ev) => {
       const sd = this.fmtShortDateWithDay(ev.date);
+      const wx = weatherForDate(ev.date);
       const pc = this.personColors(ev.person);
       const isMultiDay = ev.endDate && ev.endDate !== ev.date;
       const dateDisplay = isMultiDay ? `${this.fmtShortDate(ev.date)} – ${this.fmtShortDate(ev.endDate)}` : sd.text;
-      const timeDisplay = ev.endTime ? `${ev.time||'?'} – ${ev.endTime}` : (ev.time||'');
-      return {...ev, shortDate:dateDisplay, timeDisplay, shortDateColor: sd.isWeekend?'oklch(58% 0.18 25)':'oklch(64% 0.13 55)', personBadgeStyle:`font-size:11px;font-weight:700;padding:1px 8px;border-radius:6px;background:${pc.bg};color:${pc.text};display:inline-block;`, onEdit:()=>this.editEvent(ev), onDelete:()=>this.deleteEvent(ev.id)};
+      const timeDisplay = ev.endTime ? `${this.formatTime12h(ev.time)||'?'} – ${this.formatTime12h(ev.endTime)}` : this.formatTime12h(ev.time);
+      return {...ev, shortDate:dateDisplay, timeDisplay, shortDateColor: sd.isWeekend?'oklch(58% 0.18 25)':'oklch(64% 0.13 55)', weatherIcon: wx.icon, weatherTemp: wx.tempStr, personBadgeStyle:`font-size:11px;font-weight:700;padding:1px 8px;border-radius:6px;background:${pc.bg};color:${pc.text};display:inline-block;`, onEdit:()=>this.editEvent(ev), onDelete:()=>this.deleteEvent(ev.id)};
     };
     const upcomingPreview = upcoming.slice(0,4).map(mkEv);
     const upcomingFull = upcoming.slice(0,8).map(mkEv);
@@ -1085,7 +1174,7 @@ class Component extends DCLogic {
 
     // "This Month" dashboard summary — always the real current month, independent of the Budget tab selector
     const today = TODAY;
-    const curYear = 2026, curMonth = 6;
+    const curYear = TODAY_Y, curMonth = TODAY_M;
     const curIndex = curYear*12 + curMonth;
     const daysElapsed = Math.max(1, parseInt(today.slice(8,10),10));
     const daysInMonth = new Date(curYear, curMonth+1, 0).getDate();
@@ -1340,7 +1429,7 @@ class Component extends DCLogic {
       dayDetail = {
         events: dayEvents.map(ev => {
           const pc = this.personColors(ev.person);
-          const timeDisplay = ev.endTime ? `${ev.time||'?'} – ${ev.endTime}` : (ev.time||'');
+          const timeDisplay = ev.endTime ? `${this.formatTime12h(ev.time)||'?'} – ${this.formatTime12h(ev.endTime)}` : this.formatTime12h(ev.time);
           return {...ev, timeDisplay, personBadgeStyle:`font-size:11px;font-weight:700;padding:1px 8px;border-radius:6px;background:${pc.bg};color:${pc.text};display:inline-block;`, onEdit:()=>this.editEvent(ev), onDelete:()=>this.confirmDeleteEvent(ev.id)};
         }),
         noEvents: dayEvents.length===0,
@@ -1372,6 +1461,17 @@ class Component extends DCLogic {
       signOut: this.signOut,
 
       upcomingPreview, upcomingFull, noUpcoming: upcoming.length===0,
+      todoRows: [...s.todos].sort((a,b)=> (a.done===b.done) ? 0 : (a.done?1:-1)).map(td => ({
+        ...td,
+        textStyle: td.done ? 'text-decoration:line-through;color:oklch(60% 0.02 50);' : 'color:oklch(30% 0.02 50);',
+        onToggle: () => this.toggleTodo(td.id),
+        onDelete: () => this.deleteTodo(td.id),
+        onDragStart: this.onTodoDragStart(td.id),
+        onDragOver: this.onTodoDragOver,
+        onDrop: this.onTodoDrop(td.id),
+      })),
+      noTodos: s.todos.length===0,
+      newTodoText: s.newTodoText, onNewTodoChange:this.onNewTodoChange, onNewTodoKeyDown:this.onNewTodoKeyDown, addTodo:this.addTodo,
       totalSpentStr: this.fmtMoney(totalSpent), totalBudgetStr: this.fmtMoney(totalBudget),
       totalIncomeStr: this.fmtMoney(totalIncome),
       netStr: this.fmtMoney(Math.abs(net)), netColor: net>=0 ? 'oklch(55% 0.12 145)' : 'oklch(55% 0.15 25)',
@@ -1421,6 +1521,7 @@ class Component extends DCLogic {
 
       modalOpen: !!modal,
       modalTitle: modal ? (modal.type==='categoryDetail' ? (s.categories.find(c=>c.id===modal.categoryId)?.name || 'Category') : modal.type==='groupDetail' ? modal.group : modal.type==='dayDetail' ? this.fmtShortDateWithDay(modal.date).text : `${modal.editing?'Edit':'Add'} ${modalTitleMap[modal.type]}`) : '',
+      formError: s.formError,
       isEventModal: modal?.type==='event', isTransactionModal: modal?.type==='transaction', isCategoryModal: modal?.type==='category', isAccountModal: modal?.type==='account',
       isCategoryDetailModal: modal?.type==='categoryDetail' || modal?.type==='groupDetail', catDetail,
       isNotCategoryDetail: modal?.type!=='categoryDetail' && modal?.type!=='groupDetail' && modal?.type!=='dayDetail',
@@ -1429,7 +1530,19 @@ class Component extends DCLogic {
       form: s.form,
       onFormChange_title: (e)=>this.setFormField('title', e.target.value),
       onFormChange_date: (e)=>this.setFormField('date', e.target.value),
-      onFormChange_time: (e)=>this.setFormField('time', e.target.value),
+      onFormChange_time: (e)=>{
+        const val = e.target.value;
+        this.setState(s=>{
+          let endTime = s.form.endTime;
+          if (val && !endTime) {
+            const [h,m] = val.split(':').map(Number);
+            let total = h*60+m+60;
+            if (total > 23*60+55) total = 23*60+55;
+            endTime = String(Math.floor(total/60)).padStart(2,'0')+':'+String(total%60).padStart(2,'0');
+          }
+          return {form:{...s.form, time:val, endTime}};
+        });
+      },
       onFormChange_endDate: (e)=>this.setFormField('endDate', e.target.value),
       onFormChange_endTime: (e)=>this.setFormField('endTime', e.target.value),
       onFormChange_person: (e)=>this.setFormField('person', e.target.value),
