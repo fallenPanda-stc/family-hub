@@ -57,6 +57,7 @@ firebase.initializeApp({
       flex-direction: row !important; align-items: center !important;
       justify-content: space-between !important; gap: 10px !important;
       padding: 10px 14px !important; position: sticky !important; top: 0 !important; z-index: 30 !important;
+      border-right: none !important; border-bottom: 1px solid oklch(90% 0.02 70) !important;
     }
     .nav-brand { padding: 0 !important; }
     .nav-tabs {
@@ -64,19 +65,18 @@ firebase.initializeApp({
       flex-direction: row !important; justify-content: space-around !important; align-items: stretch !important;
       gap: 0 !important; background: oklch(99% 0.008 70) !important;
       border-top: 1px solid oklch(90% 0.02 70) !important; padding: 6px 4px !important; z-index: 40 !important;
+      padding-bottom: calc(6px + env(safe-area-inset-bottom)) !important;
     }
     .nav-tabs > div { flex: 1 !important; min-height: 44px !important; display: flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; }
     .nav-foot { margin-top: 0 !important; padding: 0 !important; border-top: none !important; font-size: 11px !important; }
-    .app-main { padding: 20px 16px 92px !important; }
-    .dash-grid, .cal-split, .bud-split, .card-grid, .stat-grid { grid-template-columns: 1fr !important; }
-
-    /* --- added by the build --- */
-    .app-nav { border-right: none !important; border-bottom: 1px solid oklch(90% 0.02 70) !important; }
-    .nav-tabs { padding-bottom: calc(6px + env(safe-area-inset-bottom)) !important; }
+    /* --- added by the build: the footer gains an email and a sign-out link --- */
     .nav-foot { text-align: right !important; flex: none !important; }
     .nav-foot > div:nth-child(1),
     .nav-foot > div:nth-child(2) { display: none !important; }
     .nav-foot > div:nth-child(3) { margin-top: 0 !important; }
+    .app-main { padding: 20px 16px 92px !important; }
+    .dash-grid, .cal-split, .bud-split, .card-grid, .stat-grid { grid-template-columns: 1fr !important; }
+    .cal-card { padding: 10px !important; }
   }
 
   /* ---------- sign-in gate ---------- */
@@ -237,12 +237,18 @@ firebase.initializeApp({
           <div style="display:flex;align-items:center;gap:14px;">
             <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:26px;">Calendar</div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
-              <div style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:oklch(45% 0.02 50);"><span style="width:9px;height:9px;border-radius:50%;background:oklch(75% 0.09 235);display:inline-block;"></span>Jihoon</div>
-              <div style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:oklch(45% 0.02 50);"><span style="width:9px;height:9px;border-radius:50%;background:oklch(85% 0.06 10);display:inline-block;"></span>Youlim</div>
-              <div style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:oklch(45% 0.02 50);"><span style="width:9px;height:9px;border-radius:50%;background:oklch(88% 0.13 95);display:inline-block;"></span>Both</div>
+              <div onClick="{{ togglePersonFilter_Jihoon }}" style="{{ personFilterStyle_Jihoon }}"><span style="width:9px;height:9px;border-radius:50%;background:oklch(75% 0.09 235);display:inline-block;"></span>Jihoon</div>
+              <div onClick="{{ togglePersonFilter_Youlim }}" style="{{ personFilterStyle_Youlim }}"><span style="width:9px;height:9px;border-radius:50%;background:oklch(85% 0.06 10);display:inline-block;"></span>Youlim</div>
+              <div onClick="{{ togglePersonFilter_Both }}" style="{{ personFilterStyle_Both }}"><span style="width:9px;height:9px;border-radius:50%;background:oklch(88% 0.13 95);display:inline-block;"></span>Both</div>
             </div>
           </div>
           <button onClick="{{ openAddEvent }}" style="{{ primaryBtnStyle }}">+ Add Event</button>
+        </div>
+
+        <div style="display:flex;background:oklch(94% 0.02 70);border-radius:11px;padding:3px;gap:2px;max-width:260px;margin-bottom:14px;">
+          <button onClick="{{ setCalViewMonth }}" style="{{ calSegMonthStyle }}">Month</button>
+          <button onClick="{{ setCalViewWeek }}" style="{{ calSegWeekStyle }}">Week</button>
+          <button onClick="{{ setCalViewDay }}" style="{{ calSegDayStyle }}">Day</button>
         </div>
 
         <div class="cal-split" style="display:grid;grid-template-columns:2fr 1fr;gap:24px;align-items:flex-start;">
@@ -270,7 +276,8 @@ firebase.initializeApp({
                 </div>
               </sc-if>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;" class="cal-weekday-row">
+            <sc-if value="{{ isCalMonthView }}" hint-placeholder-val="{{ true }}">
+            <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-bottom:6px;" class="cal-weekday-row">
               <sc-for list="{{ weekdayLabels }}" as="wd" hint-placeholder-count="7">
                 <div style="text-align:center;font-size:11.5px;font-weight:800;padding:4px 0;color:{{ wd.color }};">{{ wd.label }}</div>
               </sc-for>
@@ -289,7 +296,7 @@ firebase.initializeApp({
                       <div style="{{ cell.numWrapStyle }}" onClick="{{ cell.onOpenDay }}">
                         <div style="{{ cell.dayNumStyle }}">{{ cell.dayNum }}</div>
                         <sc-if value="{{ cell.hasWeather }}" hint-placeholder-val="{{ false }}">
-                          <div style="font-size:9.5px;color:oklch(50% 0.02 50);height:20px;display:flex;align-items:center;">{{ cell.weatherIcon }}<span class="cal-wx-temp"> {{ cell.weatherTemp }}</span></div>
+                          <div style="font-size:9.5px;color:oklch(50% 0.02 50);height:20px;display:flex;align-items:center;min-width:0;overflow:hidden;white-space:nowrap;">{{ cell.weatherIcon }}<span class="cal-wx-temp"> {{ cell.weatherTemp }}</span></div>
                         </sc-if>
                       </div>
                     </sc-for>
@@ -302,6 +309,89 @@ firebase.initializeApp({
                 </div>
               </sc-for>
             </div>
+            </sc-if>
+
+            <sc-if value="{{ isCalWeekView }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-bottom:6px;" class="cal-weekday-row">
+                <sc-for list="{{ weekdayLabels }}" as="wd" hint-placeholder-count="7">
+                  <div style="text-align:center;font-size:11.5px;font-weight:800;padding:4px 0;color:{{ wd.color }};">{{ wd.label }}</div>
+                </sc-for>
+              </div>
+              <div style="{{ calWeekView.weekStyle }}" class="cal-week-row">
+                <sc-for list="{{ calWeekView.occasionWashes }}" as="ow" hint-placeholder-count="0">
+                  <div style="{{ ow.style }}"></div>
+                </sc-for>
+                <sc-if value="{{ calWeekView.hasToday }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ calWeekView.todayBgStyle }}"></div>
+                </sc-if>
+                <div style="{{ calWeekView.gridLayerStyle }}">
+                  <sc-for list="{{ calWeekView.cells }}" as="cell" hint-placeholder-count="7">
+                    <div style="{{ cell.numWrapStyle }}" onClick="{{ cell.onOpenDay }}">
+                      <div style="{{ cell.weekdayNameStyle }}">{{ cell.weekdayName }}</div>
+                      <div style="{{ cell.dayNumStyle }}">{{ cell.dayNum }}</div>
+                      <sc-if value="{{ cell.hasWeather }}" hint-placeholder-val="{{ false }}">
+                        <div style="font-size:9.5px;color:oklch(50% 0.02 50);height:20px;display:flex;align-items:center;min-width:0;overflow:hidden;white-space:nowrap;">{{ cell.weatherIcon }}<span class="cal-wx-temp"> {{ cell.weatherTemp }}</span></div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="{{ calWeekView.barsAreaStyle }}">
+                  <sc-for list="{{ calWeekView.bars }}" as="bar" hint-placeholder-count="1">
+                    <div style="{{ bar.style }}" onClick="{{ bar.onEdit }}" title="{{ bar.title }}" class="cal-bar">{{ bar.title }}</div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isCalDayView }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:15px;">{{ calDayView.dateLabel }}</div>
+                <sc-if value="{{ calDayView.hasWeather }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:13px;color:oklch(50% 0.02 50);">{{ calDayView.weatherIcon }} {{ calDayView.weatherTemp }}</div>
+                </sc-if>
+              </div>
+              <sc-if value="{{ calDayView.isEmpty }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size:13px;color:oklch(55% 0.02 50);padding:20px 0;text-align:center;">Nothing scheduled. <span onClick="{{ calDayView.onAdd }}" style="color:oklch(64% 0.15 45);font-weight:700;cursor:pointer;">+ Add event</span></div>
+              </sc-if>
+              <sc-for list="{{ calDayView.allDay }}" as="row" hint-placeholder-count="0">
+                <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-top:1px solid oklch(93% 0.015 70);cursor:pointer;" onClick="{{ row.onEdit }}">
+                  <div style="min-width:64px;font-size:11.5px;font-weight:700;color:oklch(55% 0.02 50);">All day</div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-weight:700;font-size:14.5px;line-height:1.4;text-wrap:pretty;">{{ row.title }}</div>
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:3px;">
+                      <sc-if value="{{ row.person }}" hint-placeholder-val="{{ false }}">
+                        <span style="{{ row.personBadgeStyle }}">{{ row.person }}</span>
+                      </sc-if>
+                      <sc-if value="{{ row.continuesLabel }}" hint-placeholder-val="{{ false }}">
+                        <span style="font-size:11.5px;color:oklch(55% 0.02 50);">{{ row.continuesLabel }}</span>
+                      </sc-if>
+                      <sc-if value="{{ row.location }}" hint-placeholder-val="{{ false }}">
+                        <span style="font-size:11.5px;color:oklch(55% 0.02 50);">📍 {{ row.location }}</span>
+                      </sc-if>
+                    </div>
+                  </div>
+                </div>
+              </sc-for>
+              <sc-for list="{{ calDayView.timed }}" as="row" hint-placeholder-count="3">
+                <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-top:1px solid oklch(93% 0.015 70);cursor:pointer;" onClick="{{ row.onEdit }}">
+                  <div style="min-width:64px;font-size:11.5px;font-weight:700;color:oklch(55% 0.02 50);">{{ row.timeLabel }}</div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-weight:700;font-size:14.5px;line-height:1.4;text-wrap:pretty;">{{ row.title }}</div>
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:3px;">
+                      <sc-if value="{{ row.person }}" hint-placeholder-val="{{ false }}">
+                        <span style="{{ row.personBadgeStyle }}">{{ row.person }}</span>
+                      </sc-if>
+                      <sc-if value="{{ row.continuesLabel }}" hint-placeholder-val="{{ false }}">
+                        <span style="font-size:11.5px;color:oklch(55% 0.02 50);">{{ row.continuesLabel }}</span>
+                      </sc-if>
+                      <sc-if value="{{ row.location }}" hint-placeholder-val="{{ false }}">
+                        <span style="font-size:11.5px;color:oklch(55% 0.02 50);">📍 {{ row.location }}</span>
+                      </sc-if>
+                    </div>
+                  </div>
+                </div>
+              </sc-for>
+            </sc-if>
           </div>
 
           <div style="display:flex;flex-direction:column;gap:24px;">
@@ -530,15 +620,37 @@ firebase.initializeApp({
         <div style="background:oklch(99% 0.008 70);border:1px solid oklch(90% 0.02 70);border-radius:18px;padding:22px;margin-top:24px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
             <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:16px;">Monthly Category Summary</div>
-            <button onClick="{{ onToggleAllCatChart }}" style="{{ secondaryBtnStyle }}">{{ catChartAllLabel }}</button>
           </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
-            <sc-for list="{{ catChartLegend }}" as="lg" hint-placeholder-count="6">
-              <div onClick="{{ lg.onToggle }}" style="{{ lg.chipStyle }}">
-                <span style="{{ lg.dotStyle }}"></span>{{ lg.name }}
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+            <sc-for list="{{ catChartGroupChips }}" as="gc" hint-placeholder-count="2">
+              <div style="position:relative;">
+                <div style="display:flex;align-items:center;gap:2px;">
+                  <div onClick="{{ gc.onToggle }}" style="{{ gc.chipStyle }}"><span style="{{ gc.dotStyle }}"></span>{{ gc.name }}</div>
+                  <button onClick="{{ gc.onToggleDropdown }}" style="border:1px solid oklch(88% 0.02 70);background:white;color:oklch(45% 0.02 50);font-size:11px;padding:6px 8px;border-radius:20px;cursor:pointer;">▾</button>
+                </div>
+                <sc-if value="{{ gc.dropdownOpen }}" hint-placeholder-val="{{ false }}">
+                  <div onClick="{{ closeChartDropdown }}" style="position:fixed;inset:0;z-index:20;"></div>
+                  <div style="position:absolute;top:36px;left:0;z-index:21;background:white;border:1px solid oklch(88% 0.02 70);border-radius:12px;padding:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:180px;display:flex;flex-direction:column;gap:6px;">
+                    <sc-for list="{{ gc.catOptions }}" as="co" hint-placeholder-count="3">
+                      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:oklch(35% 0.02 50);cursor:pointer;padding:3px 0;">
+                        <input type="checkbox" checked="{{ co.checked }}" onChange="{{ co.onToggle }}">
+                        <span style="{{ co.dotStyle }}"></span>{{ co.name }}
+                      </label>
+                    </sc-for>
+                  </div>
+                </sc-if>
               </div>
             </sc-for>
           </div>
+          <sc-if value="{{ catChartLegend.length }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+              <sc-for list="{{ catChartLegend }}" as="lg" hint-placeholder-count="0">
+                <div onClick="{{ lg.onToggle }}" style="{{ lg.chipStyle }}">
+                  <span style="{{ lg.dotStyle }}"></span>{{ lg.name }}
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
           <div style="position:relative;">
             <svg viewBox="0 0 340 128" preserveAspectRatio="none" style="width:100%;height:180px;display:block;">
               <sc-for list="{{ catChartGridLines }}" as="gl" hint-placeholder-count="3">
@@ -671,8 +783,8 @@ firebase.initializeApp({
               </optgroup>
             </sc-for>
           </select></sc-if></label>
-          <label style="{{ fieldLabelStyle }}">Description<input style="{{ fieldInputStyle }}" value="{{ form.desc }}" onChange="{{ onFormChange_desc }}" placeholder="Trader Joe's"></label>
-          <label style="{{ fieldLabelStyle }}">Amount<input type="number" style="{{ fieldInputStyle }}" value="{{ form.amount }}" onChange="{{ onFormChange_amount }}" placeholder="45.20"></label>
+          <label style="{{ fieldLabelStyle }}">Description<input style="{{ fieldInputStyle }}" value="{{ form.desc }}" onChange="{{ onFormChange_desc }}" placeholder=""></label>
+          <label style="{{ fieldLabelStyle }}">Amount<input type="number" style="{{ fieldInputStyle }}" value="{{ form.amount }}" onChange="{{ onFormChange_amount }}" placeholder=""></label>
           <label style="{{ fieldLabelStyle }}">Frequency<sc-if value="{{ isFrequencyLocked }}" hint-placeholder-val="{{ false }}"><input style="{{ fieldInputStyle }}" value="One-time" disabled="{{ true }}"></input></sc-if><sc-if value="{{ isFrequencyUnlocked }}" hint-placeholder-val="{{ true }}"><select style="{{ fieldInputStyle }}" value="{{ form.frequency }}" onChange="{{ onFormChange_frequency }}">
             <option value="once">One-time</option>
             <option value="weekly">Weekly</option>
@@ -805,6 +917,7 @@ firebase.initializeApp({
 
 </x-dc>
 <script type="text/x-dc" data-dc-script>
+const WEEKDAY_FULL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const WEEKDAYS = ['S','M','T','W','T','F','S'];
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const CAT_COLORS = ['oklch(64% 0.12 45)','oklch(64% 0.12 90)','oklch(60% 0.12 145)','oklch(58% 0.10 200)','oklch(58% 0.10 260)','oklch(60% 0.12 320)'];
@@ -831,9 +944,14 @@ class Component extends DCLogic {
     view: 'dashboard',
     weather: null,
     confirmDialog: null,
-    chartHiddenCats: {},
+    chartGroupOn: {'Bills & Subscriptions': true, 'Expenses': true},
+    chartSelectedCats: {},
+    chartDropdownOpen: null,
     collapsedGroups: {'Bills & Subscriptions': true, 'Expenses': true},
     calYear: TODAY_Y, calMonth: TODAY_M,
+    calViewMode: (typeof window!=='undefined' && window.innerWidth<820) ? 'day' : 'month',
+    calAnchorDate: TODAY,
+    calPersonFilter: {Jihoon:true, Youlim:true, Both:true},
     budgetYear: TODAY_Y, budgetMonth: TODAY_M,
     todos: [],
     newTodoText: '',
@@ -1041,7 +1159,147 @@ class Component extends DCLogic {
   openCategoryDetail(cat){ this.setState({modal:{type:'categoryDetail',categoryId:cat.id}}); }
   openGroupDetail(group){ this.setState({modal:{type:'groupDetail',group}}); }
   openDayDetail(date){ this.setState({modal:{type:'dayDetail',date}}); }
-  goCalToday = () => this.setState({calMonth:TODAY_M, calYear:TODAY_Y});
+  togglePersonFilter = (person) => this.setState(s => ({calPersonFilter: {...s.calPersonFilter, [person]: !s.calPersonFilter[person]}}));
+  addDays(dateStr, n){
+    const d = new Date(dateStr+'T00:00:00');
+    d.setDate(d.getDate()+n);
+    return `${d.getFullYear()}-${P2(d.getMonth()+1)}-${P2(d.getDate())}`;
+  }
+  calWeekStart(dateStr){
+    const dow = new Date(dateStr+'T00:00:00').getDay();
+    return this.addDays(dateStr, -dow);
+  }
+  setCalViewMode = (mode) => {
+    this.setState(s => {
+      if (mode === s.calViewMode) return null;
+      let patch = {calViewMode: mode};
+      if (mode === 'month') {
+        const d = new Date(s.calAnchorDate+'T00:00:00');
+        patch.calYear = d.getFullYear(); patch.calMonth = d.getMonth();
+      } else if (s.calViewMode === 'month') {
+        const anchorD = new Date(s.calAnchorDate+'T00:00:00');
+        const inDisplayedMonth = anchorD.getFullYear()===s.calYear && anchorD.getMonth()===s.calMonth;
+        patch.calAnchorDate = inDisplayedMonth ? s.calAnchorDate : `${s.calYear}-${P2(s.calMonth+1)}-01`;
+      }
+      return patch;
+    });
+  };
+  calPrev = () => {
+    const s = this.state;
+    if (s.calViewMode === 'month') return this.prevMonth();
+    if (s.calViewMode === 'week') return this.setState(s=>({calAnchorDate:this.addDays(s.calAnchorDate,-7)}));
+    return this.setState(s=>({calAnchorDate:this.addDays(s.calAnchorDate,-1)}));
+  };
+  calNext = () => {
+    const s = this.state;
+    if (s.calViewMode === 'month') return this.nextMonth();
+    if (s.calViewMode === 'week') return this.setState(s=>({calAnchorDate:this.addDays(s.calAnchorDate,7)}));
+    return this.setState(s=>({calAnchorDate:this.addDays(s.calAnchorDate,1)}));
+  };
+  goCalToday = () => this.setState(s => s.calViewMode==='month' ? {calMonth:TODAY_M, calYear:TODAY_Y, calAnchorDate:TODAY} : {calAnchorDate:TODAY});
+
+  buildWeekEntry(weekDays, keySuffix, events, editFn, dayFn, tall){
+    const cells = weekDays.map((dateStr, col) => {
+      if (!dateStr) return {blank:true, id:'b'+keySuffix+col};
+      const d = parseInt(dateStr.slice(8,10),10);
+      const isToday = dateStr === TODAY;
+      const dow = new Date(dateStr+'T00:00:00').getDay();
+      const isWeekend = dow === 0 || dow === 6;
+      const wx = this.weatherForDate(dateStr);
+      const hasOccasionDay = events.some(e => e.annual && (e.occasionType==='birthday' || e.occasionType==='celebration') && dateStr >= e.date && dateStr <= (e.endDate||e.date));
+      return {
+        blank:false, id:dateStr, dayNum:d,
+        weekdayName: '',
+        numWrapStyle:`padding:6px 6px 2px;min-height:22px;height:100%;background:transparent;border-radius:8px 8px 0 0;cursor:pointer;display:flex;align-items:flex-start;gap:4px;min-width:0;overflow:hidden;${col<6?'border-right:1px solid oklch(91% 0.015 70);':''}`,
+        dayNumStyle:`display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 4px;border-radius:6px;font-size:12px;font-weight:${isToday||hasOccasionDay?'800':'700'};color:${isToday?'oklch(64% 0.15 45)':isWeekend?'oklch(58% 0.18 25)':'oklch(45% 0.02 50)'};background:${isToday?'oklch(88% 0.07 45)':'transparent'};${(!isToday&&hasOccasionDay)?'box-shadow:0 0 0 1.5px oklch(78% 0.09 80);':''}`,
+        weekdayNameStyle:`font-size:11px;font-weight:700;color:oklch(50% 0.02 50);align-self:center;`,
+        hasWeather: !!wx, weatherIcon: wx?wx.icon:'', weatherTemp: wx?wx.tempStr:'',
+        onOpenDay: () => dayFn(dateStr),
+      };
+    });
+    const firstIdx = weekDays.findIndex(d=>d);
+    const lastIdx = (() => { for (let i=6;i>=0;i--) if (weekDays[i]) return i; return -1; })();
+    let bars = [];
+    if (firstIdx !== -1) {
+      const weekStart = weekDays[firstIdx], weekEnd = weekDays[lastIdx];
+      const weekEvents = events.filter(e => e.date <= weekEnd && (e.endDate||e.date) >= weekStart);
+      weekEvents.sort((a,b)=> (b.annual?1:0) - (a.annual?1:0) || a.date.localeCompare(b.date));
+      const rows = [];
+      for (const ev of weekEvents){
+        const evEnd = ev.endDate||ev.date;
+        const colStart = ev.date <= weekStart ? firstIdx : weekDays.indexOf(ev.date);
+        const colEnd = evEnd >= weekEnd ? lastIdx : weekDays.indexOf(evEnd);
+        let rowIdx = rows.findIndex(r => r < colStart);
+        if (rowIdx === -1) { rowIdx = rows.length; rows.push(colEnd); } else rows[rowIdx] = colEnd;
+        const pc = this.personColors(ev.person);
+        const yrsLabel = (ev.annual && ev.yearsSince != null) ? ` (${ev.yearsSince})` : '';
+        bars.push({
+          id: ev.id+'-'+keySuffix,
+          title: (ev.annual ? this.occasionIconFor(ev.occasionType)+' ' : '') + ev.title + yrsLabel,
+          style: (()=>{ const mobile = (typeof window!=='undefined' && window.innerWidth<=820); const inset=mobile?1:4, wReduce=mobile?2:8, pad=mobile?3:6, fs=mobile?9.5:10.5;
+            return `position:absolute;left:calc(${colStart}/7*100% + ${inset}px);width:calc(${(colEnd-colStart+1)}/7*100% - ${wReduce}px);top:${30+rowIdx*21}px;height:17px;background:${pc.bg};color:${pc.text};border-radius:5px;font-size:${fs}px;font-weight:700;padding:1px ${pad}px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;pointer-events:auto;box-sizing:border-box;`; })(),
+          onEdit: (e) => { e.stopPropagation(); editFn(ev); },
+        });
+      }
+    }
+    const maxRows = bars.length ? Math.max(...bars.map(b=>parseInt(b.style.match(/top:(\d+)px/)[1])/21))+1 : 0;
+    const totalHeight = Math.max(tall?320:92, maxRows*21+4+30);
+    const todayIdx = weekDays.findIndex(d=>d===TODAY);
+    const occasionCols = [];
+    weekDays.forEach((dateStr, col) => {
+      if (!dateStr) return;
+      const hasBirthdayOrCelebration = events.some(e => e.annual && (e.occasionType==='birthday' || e.occasionType==='celebration') && dateStr >= e.date && dateStr <= (e.endDate||e.date));
+      if (hasBirthdayOrCelebration) occasionCols.push(col);
+    });
+    return {
+      id:'w'+keySuffix, cells, bars,
+      occasionWashes: occasionCols.map(col => ({col, style: `position:absolute;top:0;bottom:0;left:calc(${col}/7*100%);width:calc(1/7*100%);background:oklch(94% 0.045 85);`})),
+      hasToday: todayIdx !== -1,
+      todayBgStyle: todayIdx !== -1 ? `position:absolute;top:0;bottom:0;left:calc(${todayIdx}/7*100%);width:calc(1/7*100%);background:oklch(96% 0.035 45);` : '',
+      gridLayerStyle:`position:absolute;inset:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));`,
+      barsAreaStyle:`position:relative;min-height:${totalHeight}px;pointer-events:none;`,
+      weekStyle:`position:relative;border-radius:10px;background:oklch(97% 0.01 70);border:1px solid oklch(93% 0.015 70);overflow:hidden;`,
+    };
+  }
+  buildSingleWeek(anchorDate, events, editFn, dayFn){
+    const weekStart = this.calWeekStart(anchorDate);
+    const weekDays = Array.from({length:7}, (_,i)=>this.addDays(weekStart, i));
+    return this.buildWeekEntry(weekDays, 'sw', events, editFn, dayFn, true);
+  }
+  buildDayView(dateStr, events, editFn, addFn){
+    const dayEvents = events.filter(e => dateStr >= e.date && dateStr <= (e.endDate||e.date));
+    const wx = this.weatherForDate(dateStr);
+    const mkRow = (ev) => {
+      const pc = this.personColors(ev.person);
+      const isMultiDay = ev.endDate && ev.endDate !== ev.date;
+      let continuesLabel = '';
+      if (isMultiDay) {
+        const totalDays = Math.round((new Date(ev.endDate+'T00:00:00') - new Date(ev.date+'T00:00:00'))/86400000)+1;
+        const dayNum = Math.round((new Date(dateStr+'T00:00:00') - new Date(ev.date+'T00:00:00'))/86400000)+1;
+        continuesLabel = dayNum>1 ? `day ${dayNum} of ${totalDays}` : `day 1 of ${totalDays}`;
+      }
+      const yrsLabel = (ev.annual && ev.yearsSince != null) ? ` (${ev.yearsSince})` : '';
+      return {
+        id: ev.id, title: (ev.annual ? this.occasionIconFor(ev.occasionType)+' ' : '') + ev.title + yrsLabel,
+        timeLabel: (!ev.annual && ev.time) ? (ev.endTime ? `${this.formatTime12h(ev.time)} – ${this.formatTime12h(ev.endTime)}` : this.formatTime12h(ev.time)) : '',
+        person: ev.person||'', personBadgeStyle: `font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:${pc.bg};color:${pc.text};`,
+        location: ev.location||'', continuesLabel,
+        onEdit: () => editFn(ev),
+      };
+    };
+    const allDay = dayEvents.filter(e => e.annual || !e.time).map(mkRow);
+    const timed = dayEvents.filter(e => !e.annual && e.time).sort((a,b)=>a.time.localeCompare(b.time)).map(mkRow);
+    return {
+      dateLabel: this.fmtFullDate(dateStr),
+      hasWeather: !!wx, weatherIcon: wx?wx.icon:'', weatherTemp: wx?wx.tempStr:'',
+      allDay, timed, isEmpty: allDay.length===0 && timed.length===0,
+      onAdd: () => addFn(dateStr),
+    };
+  }
+  fmtFullDate(iso){
+    const d = new Date(iso+'T00:00:00');
+    return `${WEEKDAY_FULL[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  }
 
   roundTimeTo5(t){
     if (!t) return t;
@@ -1244,15 +1502,13 @@ class Component extends DCLogic {
     this.setState({modal:null, form:{}});
   };
 
-  toggleChartCat = (id) => this.setState(s => ({chartHiddenCats: {...s.chartHiddenCats, [id]: !s.chartHiddenCats[id]}}));
+  toggleChartGroup = (group) => this.setState(s => ({chartGroupOn: {...s.chartGroupOn, [group]: !s.chartGroupOn[group]}}));
+  toggleChartSelectedCat = (id) => this.setState(s => ({chartSelectedCats: {...s.chartSelectedCats, [id]: !s.chartSelectedCats[id]}}));
+  toggleChartDropdown = (group) => this.setState(s => ({chartDropdownOpen: s.chartDropdownOpen===group ? null : group}));
+  closeChartDropdown = () => this.setState({chartDropdownOpen:null});
   onTxSortChange = (e) => this.setState({txSort: e.target.value, txPage:0});
   toggleGroupCollapse = (group) => this.setState(s => ({collapsedGroups: {...s.collapsedGroups, [group]: !s.collapsedGroups[group]}}));
-  onToggleAllCatChart = () => {
-    const allHidden = this.state.categories.every(c => this.state.chartHiddenCats[c.id]);
-    const next = {};
-    this.state.categories.forEach(c => { next[c.id] = !allHidden; });
-    this.setState({chartHiddenCats: allHidden ? {} : next});
-  };
+
 
   toggleReveal(id){ this.setState(s=>({revealed:{...s.revealed, [id]:!s.revealed[id]}})); }
 
@@ -1292,65 +1548,7 @@ class Component extends DCLogic {
     const weeks = [];
     for (let w=0; w<days.length; w+=7){
       const weekDays = days.slice(w, w+7);
-      const cells = weekDays.map((dateStr, col) => {
-        if (!dateStr) return {blank:true, id:'b'+w+col};
-        const d = parseInt(dateStr.slice(8,10),10);
-        const isToday = dateStr === TODAY;
-        const dow = new Date(dateStr+'T00:00:00').getDay();
-        const isWeekend = dow === 0 || dow === 6;
-        const wx = this.weatherForDate(dateStr);
-        const hasOccasionDay = events.some(e => e.annual && (e.occasionType==='birthday' || e.occasionType==='celebration') && dateStr >= e.date && dateStr <= (e.endDate||e.date));
-        return {
-          blank:false, id:dateStr, dayNum:d,
-          numWrapStyle:`padding:6px 6px 2px;min-height:22px;height:100%;background:transparent;border-radius:8px 8px 0 0;cursor:pointer;display:flex;align-items:flex-start;gap:4px;${col<6?'border-right:1px solid oklch(91% 0.015 70);':''}`,
-          dayNumStyle:`display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 4px;border-radius:6px;font-size:12px;font-weight:${isToday||hasOccasionDay?'800':'700'};color:${isToday?'oklch(64% 0.15 45)':isWeekend?'oklch(58% 0.18 25)':'oklch(45% 0.02 50)'};background:${isToday?'oklch(88% 0.07 45)':'transparent'};${(!isToday&&hasOccasionDay)?'box-shadow:0 0 0 1.5px oklch(78% 0.09 80);':''}`,
-          hasWeather: !!wx, weatherIcon: wx?wx.icon:'', weatherTemp: wx?wx.tempStr:'',
-          onOpenDay: () => dayFn(dateStr),
-        };
-      });
-      const firstIdx = weekDays.findIndex(d=>d);
-      const lastIdx = (() => { for (let i=6;i>=0;i--) if (weekDays[i]) return i; return -1; })();
-      let bars = [];
-      if (firstIdx !== -1) {
-        const weekStart = weekDays[firstIdx], weekEnd = weekDays[lastIdx];
-        const weekEvents = events.filter(e => e.date <= weekEnd && (e.endDate||e.date) >= weekStart);
-        weekEvents.sort((a,b)=> (b.annual?1:0) - (a.annual?1:0) || a.date.localeCompare(b.date));
-        const rows = []; // each row: last occupied col
-        for (const ev of weekEvents){
-          const evEnd = ev.endDate||ev.date;
-          const colStart = ev.date <= weekStart ? firstIdx : weekDays.indexOf(ev.date);
-          const colEnd = evEnd >= weekEnd ? lastIdx : weekDays.indexOf(evEnd);
-          let rowIdx = rows.findIndex(r => r < colStart);
-          if (rowIdx === -1) { rowIdx = rows.length; rows.push(colEnd); } else rows[rowIdx] = colEnd;
-          const pc = this.personColors(ev.person);
-          const yrsLabel = (ev.annual && ev.yearsSince != null) ? ` (${ev.yearsSince})` : '';
-          bars.push({
-            id: ev.id+'-'+w,
-            title: (ev.annual ? this.occasionIconFor(ev.occasionType)+' ' : '') + ev.title + yrsLabel,
-            style: (()=>{ const mobile = (typeof window!=='undefined' && window.innerWidth<=820); const inset=mobile?1:4, wReduce=mobile?2:8, pad=mobile?3:6, fs=mobile?9.5:10.5;
-              return `position:absolute;left:calc(${colStart}/7*100% + ${inset}px);width:calc(${(colEnd-colStart+1)}/7*100% - ${wReduce}px);top:${30+rowIdx*21}px;height:17px;background:${pc.bg};color:${pc.text};border-radius:5px;font-size:${fs}px;font-weight:700;padding:1px ${pad}px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;pointer-events:auto;box-sizing:border-box;`; })(),
-            onEdit: (e) => { e.stopPropagation(); editFn(ev); },
-          });
-        }
-      }
-      const maxRows = bars.length ? Math.max(...bars.map(b=>parseInt(b.style.match(/top:(\d+)px/)[1])/21))+1 : 0;
-      const totalHeight = Math.max(92, maxRows*21+4+30);
-      const todayIdx = weekDays.findIndex(d=>d===TODAY);
-      const occasionCols = [];
-      weekDays.forEach((dateStr, col) => {
-        if (!dateStr) return;
-        const hasBirthdayOrCelebration = events.some(e => e.annual && (e.occasionType==='birthday' || e.occasionType==='celebration') && dateStr >= e.date && dateStr <= (e.endDate||e.date));
-        if (hasBirthdayOrCelebration) occasionCols.push(col);
-      });
-      weeks.push({
-        id:'w'+w, cells, bars,
-        occasionWashes: occasionCols.map(col => ({col, style: `position:absolute;top:0;bottom:0;left:calc(${col}/7*100%);width:calc(1/7*100%);background:oklch(94% 0.045 85);`})),
-        hasToday: todayIdx !== -1,
-        todayBgStyle: todayIdx !== -1 ? `position:absolute;top:0;bottom:0;left:calc(${todayIdx}/7*100%);width:calc(1/7*100%);background:oklch(96% 0.035 45);` : '',
-        gridLayerStyle:`position:absolute;inset:0;display:grid;grid-template-columns:repeat(7,1fr);`,
-        barsAreaStyle:`position:relative;min-height:${totalHeight}px;pointer-events:none;`,
-        weekStyle:`position:relative;border-radius:10px;background:oklch(97% 0.01 70);border:1px solid oklch(93% 0.015 70);overflow:hidden;`,
-      });
+      weeks.push(this.buildWeekEntry(weekDays, w, events, editFn, dayFn, false));
     }
     return weeks;
   }
@@ -1374,7 +1572,8 @@ class Component extends DCLogic {
 
     // expand annual occasions across the displayed calendar year, current year, and next
     const occasionYears = Array.from(new Set([s.calYear, TODAY_Y, TODAY_Y+1]));
-    const expandedEvents = s.events.flatMap(e => e.annual ? this.occurrencesFor(e, occasionYears) : [e]);
+    const expandedEventsAll = s.events.flatMap(e => e.annual ? this.occurrencesFor(e, occasionYears) : [e]);
+    const expandedEvents = expandedEventsAll.filter(e => s.calPersonFilter[e.person||'Both'] !== false);
 
     // events sorted — for annual occasions, only their single nearest upcoming occurrence should appear in Upcoming
     const seenAnnualIds = new Set();
@@ -1622,24 +1821,45 @@ class Component extends DCLogic {
       }
       return arr;
     };
+    const CHART_GROUP_COLOR = {'Bills & Subscriptions':'oklch(58% 0.10 260)', 'Expenses':'oklch(64% 0.12 45)'};
+    const groupSeries = (group) => {
+      const names = s.categories.filter(c=>c.group===group).map(c=>c.name);
+      const arr = new Array(12).fill(0);
+      names.forEach(n => catMonthlySeries(n).forEach((v,i)=>{arr[i]+=v;}));
+      return arr;
+    };
     const catSeriesData = s.categories.map((cat,i) => ({cat, color: CAT_COLORS[i % CAT_COLORS.length], data: catMonthlySeries(cat.name)}));
-    const catChartMax = Math.max(1, ...catSeriesData.flatMap(c=>c.data));
+    const groupLines = ['Bills & Subscriptions','Expenses'].map(g => ({group:g, color: CHART_GROUP_COLOR[g], data: groupSeries(g), visible: !!s.chartGroupOn[g]}));
+    const catChartMax = Math.max(1, ...groupLines.filter(g=>g.visible).flatMap(g=>g.data), ...catSeriesData.filter(c=>s.chartSelectedCats[c.cat.id]).flatMap(c=>c.data));
     const catToPoints = (arr) => arr.map((v,i) => `${30+(i/11)*300},${100 - (v/catChartMax)*90}`).join(' ');
-    const catChartSeries = catSeriesData.map(c => ({
-      id: c.cat.id, points: catToPoints(c.data), color: c.color, visible: !s.chartHiddenCats[c.cat.id],
-    }));
+    const catChartSeries = [
+      ...groupLines.map(g => ({id:g.group, points:catToPoints(g.data), color:g.color, visible:g.visible})),
+      ...catSeriesData.filter(c=>s.chartSelectedCats[c.cat.id]).map(c => ({id:c.cat.id, points:catToPoints(c.data), color:c.color, visible:true})),
+    ];
     const catChartGridLines = [{y:10,v:catChartMax},{y:55,v:catChartMax/2},{y:100,v:0}].map(g=>({
       y:g.y, label:'$'+this.fmtMoney(g.v),
       labelStyle:`position:absolute;left:0;top:${(g.y/128)*100}%;transform:translateY(-50%);font-size:10px;color:#8a8377;white-space:nowrap;background:oklch(99% 0.008 70);padding-right:2px;`,
     }));
-    const catChartLegend = s.categories.map((cat,i) => {
-      const hidden = !!s.chartHiddenCats[cat.id];
-      const color = CAT_COLORS[i % CAT_COLORS.length];
+    const catChartGroupChips = groupLines.map(g => ({
+      name: g.group, onToggle: () => this.toggleChartGroup(g.group),
+      dotStyle: `width:8px;height:8px;border-radius:50%;background:${g.color};display:inline-block;opacity:${g.visible?1:0.3};`,
+      chipStyle: `display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;padding:6px 12px;border-radius:20px;cursor:pointer;background:${g.visible?'oklch(96% 0.02 70)':'oklch(97% 0.008 70)'};color:${g.visible?'oklch(35% 0.02 50)':'oklch(65% 0.01 50)'};border:1px solid ${g.visible?'oklch(88% 0.02 70)':'oklch(93% 0.01 70)'};`,
+      dropdownOpen: s.chartDropdownOpen===g.group,
+      onToggleDropdown: () => this.toggleChartDropdown(g.group),
+      catOptions: s.categories.filter(c=>c.group===g.group).map((c,idx) => ({
+        id:c.id, name:c.name, checked:!!s.chartSelectedCats[c.id],
+        onToggle: () => this.toggleChartSelectedCat(c.id),
+        dotStyle:`width:7px;height:7px;border-radius:50%;background:${CAT_COLORS[s.categories.indexOf(c) % CAT_COLORS.length]};display:inline-block;`,
+      })),
+    }));
+    const catChartLegend = s.categories.filter(c=>s.chartSelectedCats[c.id]).map((cat,i) => {
+      const idx = s.categories.indexOf(cat);
+      const color = CAT_COLORS[idx % CAT_COLORS.length];
       return {
         name: cat.name,
-        onToggle: () => this.toggleChartCat(cat.id),
-        dotStyle: `width:8px;height:8px;border-radius:50%;background:${color};display:inline-block;opacity:${hidden?0.3:1};`,
-        chipStyle: `display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 10px;border-radius:20px;cursor:pointer;background:${hidden?'oklch(95% 0.01 70)':'oklch(97% 0.015 70)'};color:${hidden?'oklch(65% 0.02 50)':'oklch(40% 0.02 50)'};border:1px solid ${hidden?'oklch(92% 0.01 70)':'oklch(90% 0.02 70)'};text-decoration:${hidden?'line-through':'none'};`,
+        onToggle: () => this.toggleChartSelectedCat(cat.id),
+        dotStyle: `width:8px;height:8px;border-radius:50%;background:${color};display:inline-block;`,
+        chipStyle: `display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 10px;border-radius:20px;cursor:pointer;background:oklch(97% 0.015 70);color:oklch(35% 0.02 50);`,
       };
     });
 
@@ -1724,6 +1944,17 @@ class Component extends DCLogic {
 
     // calendar grid
     const calWeeks = this.buildCalendarWeeks(s.calYear, s.calMonth, expandedEvents, (ev)=>this.editEvent(ev), (date)=>this.openDayDetail(date));
+    const calWeekView = this.buildSingleWeek(s.calAnchorDate, expandedEvents, (ev)=>this.editEvent(ev), (date)=>this.openDayDetail(date));
+    const calDayView = this.buildDayView(s.calAnchorDate, expandedEvents, (ev)=>this.editEvent(ev), (date)=>this.openAddEventForDate(date));
+    const calHeaderLabel = (() => {
+      if (s.calViewMode === 'month') return `${MONTHS[s.calMonth]} ${s.calYear}`;
+      if (s.calViewMode === 'day') return this.fmtFullDate(s.calAnchorDate);
+      const ws = this.calWeekStart(s.calAnchorDate), we = this.addDays(ws,6);
+      const wsD = new Date(ws+'T00:00:00'), weD = new Date(we+'T00:00:00');
+      const startLabel = `${MONTHS[wsD.getMonth()].slice(0,3)} ${wsD.getDate()}`;
+      const endLabel = wsD.getFullYear()===weD.getFullYear() ? `${MONTHS[weD.getMonth()].slice(0,3)} ${weD.getDate()}, ${weD.getFullYear()}` : `${MONTHS[weD.getMonth()].slice(0,3)} ${weD.getDate()}, ${weD.getFullYear()}`;
+      return `${startLabel} – ${endLabel}`;
+    })();
 
     // occasions list: next occurrence per annual event, nearest first
     const annualEvents = s.events.filter(e => e.annual);
@@ -1812,7 +2043,12 @@ class Component extends DCLogic {
 
     return {
       isDashboard: s.view==='dashboard', isCalendar: s.view==='calendar', isBudget: s.view==='budget', isDirectory: s.view==='directory',
-      goDashboard:this.goDashboard, goCalendar:this.goCalendar, goBudget:this.goBudget, goDirectory:this.goDirectory,
+      togglePersonFilter_Jihoon: () => this.togglePersonFilter('Jihoon'),
+      togglePersonFilter_Youlim: () => this.togglePersonFilter('Youlim'),
+      togglePersonFilter_Both: () => this.togglePersonFilter('Both'),
+      personFilterStyle_Jihoon: `display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;cursor:pointer;padding:3px 8px;border-radius:999px;color:${s.calPersonFilter.Jihoon?'oklch(45% 0.02 50)':'oklch(72% 0.01 50)'};background:${s.calPersonFilter.Jihoon?'oklch(93% 0.02 235)':'transparent'};`,
+      personFilterStyle_Youlim: `display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;cursor:pointer;padding:3px 8px;border-radius:999px;color:${s.calPersonFilter.Youlim?'oklch(45% 0.02 50)':'oklch(72% 0.01 50)'};background:${s.calPersonFilter.Youlim?'oklch(93% 0.03 10)':'transparent'};`,
+      personFilterStyle_Both: `display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;cursor:pointer;padding:3px 8px;border-radius:999px;color:${s.calPersonFilter.Both?'oklch(45% 0.02 50)':'oklch(72% 0.01 50)'};background:${s.calPersonFilter.Both?'oklch(94% 0.06 95)':'transparent'};`,      goDashboard:this.goDashboard, goCalendar:this.goCalendar, goBudget:this.goBudget, goDirectory:this.goDirectory,
       navStyle_dashboard: navBase + (s.view==='dashboard'?navOn:navOff),
       navStyle_calendar: navBase + (s.view==='calendar'?navOn:navOff),
       navStyle_budget: navBase + (s.view==='budget'?navOn:navOff),
@@ -1847,15 +2083,23 @@ class Component extends DCLogic {
       overallBudgetBarStyle: `height:100%;width:${totalIncome>0?Math.min(100,(totalSpent/totalIncome)*100):0}%;background:oklch(60% 0.12 145);border-radius:6px;`,
       incomeVsSpentBarStyle: `height:100%;width:${totalIncome>0?Math.min(100,(totalSpent/totalIncome)*100):(totalSpent>0?100:0)}%;background:${totalSpent>totalIncome?'oklch(60% 0.15 25)':'oklch(60% 0.12 145)'};border-radius:6px;`,
       chartIncomePoints, chartBillsPoints, chartExpensesPoints, chartGridLines, chartMonthLabels,
-      catChartSeries, catChartLegend, catChartGridLines,
-      onToggleAllCatChart: this.onToggleAllCatChart,
-      catChartAllLabel: s.categories.every(c => s.chartHiddenCats[c.id]) ? 'Select All' : 'Unselect All',
+      catChartSeries, catChartLegend, catChartGridLines, catChartGroupChips,
+      closeChartDropdown: this.closeChartDropdown,
       accountsPreview, accountCards, thisMonth, incomeBar, jc, yc,
 
-      calMonthLabel: `${MONTHS[s.calMonth]} ${s.calYear}`,
+      calMonthLabel: calHeaderLabel,
       weekdayLabels: WEEKDAYS.map((w,i)=>({label:w, color: (i===0||i===6) ? 'oklch(58% 0.18 25)' : 'oklch(55% 0.02 50)'})), calWeeks,
-      prevMonth:this.prevMonth, nextMonth:this.nextMonth,
-      calNavOpen: !!s.calNavOpen, toggleCalNav:this.toggleCalNav, closeCalNav:this.closeCalNav,
+      calWeekView, calDayView,
+      isCalMonthView: s.calViewMode==='month', isCalWeekView: s.calViewMode==='week', isCalDayView: s.calViewMode==='day',
+      calViewSegStyle: (mode)=>`flex:1;padding:7px 12px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;border:none;text-align:center;${s.calViewMode===mode?'background:white;color:oklch(64% 0.15 45);box-shadow:0 1px 3px rgba(0,0,0,0.08);':'background:transparent;color:oklch(45% 0.02 50);'}`,
+      calSegMonthStyle: `flex:1;padding:7px 12px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;border:none;text-align:center;${s.calViewMode==='month'?'background:white;color:oklch(64% 0.15 45);box-shadow:0 1px 3px rgba(0,0,0,0.08);':'background:transparent;color:oklch(45% 0.02 50);'}`,
+      calSegWeekStyle: `flex:1;padding:7px 12px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;border:none;text-align:center;${s.calViewMode==='week'?'background:white;color:oklch(64% 0.15 45);box-shadow:0 1px 3px rgba(0,0,0,0.08);':'background:transparent;color:oklch(45% 0.02 50);'}`,
+      calSegDayStyle: `flex:1;padding:7px 12px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;border:none;text-align:center;${s.calViewMode==='day'?'background:white;color:oklch(64% 0.15 45);box-shadow:0 1px 3px rgba(0,0,0,0.08);':'background:transparent;color:oklch(45% 0.02 50);'}`,
+      setCalViewMonth: () => this.setCalViewMode('month'),
+      setCalViewWeek: () => this.setCalViewMode('week'),
+      setCalViewDay: () => this.setCalViewMode('day'),
+      prevMonth:this.calPrev, nextMonth:this.calNext,
+      calNavOpen: !!s.calNavOpen && s.calViewMode==='month', toggleCalNav:this.toggleCalNav, closeCalNav:this.closeCalNav,
       goCalToday:this.goCalToday,
       calMonthSel: s.calMonth, calYearSel: s.calYear,
       onCalMonthSelect:this.onCalMonthSelect, onCalYearSelect:this.onCalYearSelect,
